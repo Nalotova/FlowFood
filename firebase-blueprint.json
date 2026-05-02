@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Global user application profile",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "householdIds": { "type": "array" },
+        "activeHouseholdId": { "type": "string" }
+      },
+      "required": ["uid", "householdIds", "activeHouseholdId"]
+    },
+    "Household": {
+      "title": "Household",
+      "description": "Shared family household data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "ownerUserId": { "type": "string" },
+        "memberUserIds": { "type": "array" }
+      },
+      "required": ["id", "name", "ownerUserId", "memberUserIds"]
+    },
+    "UserProfile": {
+      "title": "Family Member Profile",
+      "description": "Specific profile for a household member (e.g. child, adult)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "kcalTarget": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      }
+    },
+    "FoodItem": {
+      "title": "Fridge Item",
+      "description": "An item stored in the refrigerator",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "foodName": { "type": "string" },
+        "amount": { "type": "number" },
+        "unit": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "users/{uid}": {
+      "schema": "User",
+      "description": "Root user records"
+    },
+    "households/{householdId}": {
+      "schema": "Household",
+      "description": "Household metadata"
+    },
+    "households/{householdId}/profiles/{profileId}": {
+      "schema": "UserProfile",
+      "description": "Household member profiles"
+    },
+    "households/{householdId}/fridgeItems/{itemId}": {
+      "schema": "FoodItem",
+      "description": "Inventory items"
+    }
+  }
+}

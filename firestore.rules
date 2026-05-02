@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 0. Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function isMember(householdId) {
+      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUserIds;
+    }
+
+    // 1. User Profiles (Private)
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 2. Households
+    match /households/{householdId} {
+      allow get: if isSignedIn() && request.auth.uid in resource.data.memberUserIds;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid in resource.data.memberUserIds;
+
+      // Profiles subcollection
+      match /profiles/{profileId} {
+        allow read, write: if isMember(householdId);
+      }
+      
+      // Fridge Items subcollection
+      match /fridgeItems/{itemId} {
+        allow read, write: if isMember(householdId);
+      }
+      
+      // Food Log entries
+      match /foodLogEntries/{entryId} {
+        allow read, write: if isMember(householdId);
+      }
+      
+      // Cooking History
+      match /cookingHistory/{resultId} {
+        allow read, write: if isMember(householdId);
+      }
+    }
+  }
+}
