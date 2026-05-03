@@ -29,7 +29,15 @@ export const useFridge = () => {
       setLoading(false);
     }, householdId);
 
-    return () => unsubscribe();
+    // Safety timeout in case onSnapshot takes too long or fails silently
+    const timeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [householdId]);
 
   const addFoodItem = async (itemData: Omit<FoodItem, "id" | "createdAt" | "updatedAt">) => {

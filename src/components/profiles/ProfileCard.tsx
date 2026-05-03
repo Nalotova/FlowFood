@@ -13,9 +13,9 @@ import { i18n } from '../../i18n/ru';
 
 interface ProfileCardProps {
   profile: UserProfile;
-  onEdit: (profile: UserProfile) => void;
-  onDelete: (id: string) => void;
-  onToggleActive: (id: string) => void;
+  onEdit?: (profile: UserProfile) => void;
+  onDelete?: (id: string) => void;
+  onToggleActive?: (id: string) => void;
 }
 
 export const ProfileCard: React.FC<ProfileCardProps> = ({ 
@@ -67,26 +67,32 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           </p>
         </div>
         <div className="flex space-x-1">
-           <button 
-            onClick={() => onToggleActive(profile.id)}
-            className={`p-2 rounded-full transition-colors ${profile.isActive ? 'text-green-500 hover:bg-green-50' : 'text-stone-300 hover:bg-stone-100'}`}
-          >
-            <Power size={18} />
-          </button>
-          <button 
-            onClick={() => onEdit(profile)}
-            className="p-2 text-stone-300 hover:text-natural-primary hover:bg-stone-50 rounded-full transition-colors"
-          >
-            <Settings2 size={18} />
-          </button>
-          <button 
-            onClick={() => {
-              if (window.confirm(`${i18n.common.delete} ${profile.name}?`)) onDelete(profile.id);
-            }}
-            className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-          >
-            <Trash2 size={18} />
-          </button>
+           {typeof onToggleActive === 'function' && (
+             <button 
+              onClick={() => onToggleActive(profile.id)}
+              className={`p-2 rounded-full transition-colors ${profile.isActive ? 'text-green-500 hover:bg-green-50' : 'text-stone-300 hover:bg-stone-100'}`}
+            >
+              <Power size={18} />
+            </button>
+          )}
+          {typeof onEdit === 'function' && (
+            <button 
+              onClick={() => onEdit(profile)}
+              className="p-2 text-stone-300 hover:text-natural-primary hover:bg-stone-50 rounded-full transition-colors"
+            >
+              <Settings2 size={18} />
+            </button>
+          )}
+          {typeof onDelete === 'function' && (
+            <button 
+              onClick={() => {
+                if (window.confirm(`${i18n.common.delete} ${profile.name}?`)) onDelete(profile.id);
+              }}
+              className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+            >
+              <Trash2 size={18} />
+            </button>
+          )}
         </div>
       </div>
 

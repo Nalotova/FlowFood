@@ -8,21 +8,25 @@ import { UserProfile } from '../types/profile';
 import { Plus, UserPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useProfiles } from '../hooks/useProfiles';
+import { useApp } from '../contexts/AppContext';
 import { ProfileCard } from '../components/profiles/ProfileCard';
 import { ProfileForm } from '../components/profiles/ProfileForm';
 import { i18n } from '../i18n/ru';
 
 export const ProfilesPage: React.FC = () => {
+  const { userAppProfile, permissions } = useApp();
   const { profiles, addProfile, updateProfile, deleteProfile, toggleActive, loading } = useProfiles();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<UserProfile | undefined>();
 
   const handleCreateNew = () => {
+    if (!permissions.canEdit) return;
     setEditingProfile(undefined);
     setIsFormOpen(true);
   };
 
   const handleEdit = (profile: UserProfile) => {
+    if (!permissions.canEdit) return;
     setEditingProfile(profile);
     setIsFormOpen(true);
   };
@@ -60,12 +64,14 @@ export const ProfilesPage: React.FC = () => {
     <div className="space-y-6 pt-2 pb-24">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-serif font-bold text-natural-primary">{i18n.profiles.title}</h1>
-        <button 
-          onClick={handleCreateNew}
-          className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm hover:bg-stone-200 transition-colors"
-        >
-          <Plus size={20} />
-        </button>
+        {permissions.canEdit && (
+          <button 
+            onClick={handleCreateNew}
+            className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm hover:bg-stone-200 transition-colors"
+          >
+            <Plus size={20} />
+          </button>
+        )}
       </div>
 
       <AnimatePresence mode="popLayout">
@@ -83,12 +89,14 @@ export const ProfilesPage: React.FC = () => {
                 <h3 className="font-serif font-bold text-stone-800 text-xl">Семья пуста</h3>
                 <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest px-8">{i18n.profiles.noProfiles}</p>
               </div>
-              <button 
-                onClick={handleCreateNew}
-                className="px-8 py-3 bg-natural-primary text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-stone-100"
-              >
-                {i18n.profiles.addProfile}
-              </button>
+              {permissions.canEdit && (
+                <button 
+                  onClick={handleCreateNew}
+                  className="px-8 py-3 bg-natural-primary text-white rounded-full text-xs font-black uppercase tracking-widest shadow-lg shadow-stone-100"
+                >
+                  {i18n.profiles.addProfile}
+                </button>
+              )}
             </div>
           </motion.div>
         ) : (
@@ -97,9 +105,9 @@ export const ProfilesPage: React.FC = () => {
               <ProfileCard
                 key={profile.id}
                 profile={profile}
-                onEdit={handleEdit}
-                onDelete={deleteProfile}
-                onToggleActive={toggleActive}
+                onEdit={permissions.canEdit ? handleEdit : undefined}
+                onDelete={permissions.canEdit ? deleteProfile : undefined}
+                onToggleActive={permissions.canEdit ? toggleActive : undefined}
               />
             ))}
           </div>

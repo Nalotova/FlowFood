@@ -14,10 +14,10 @@ import { i18n } from '../../i18n/ru';
 
 interface FoodItemCardProps {
   item: FoodItem;
-  onEdit: (item: FoodItem) => void;
-  onDelete: (id: string) => void;
-  onAdjust: (id: string, delta: number) => void;
-  onSet: (id: string, amount: number) => void;
+  onEdit?: (item: FoodItem) => void;
+  onDelete?: (id: string) => void;
+  onAdjust?: (id: string, delta: number) => void;
+  onSet?: (id: string, amount: number) => void;
 }
 
 export const FoodItemCard: React.FC<FoodItemCardProps> = ({ 
@@ -86,23 +86,27 @@ export const FoodItemCard: React.FC<FoodItemCardProps> = ({
 
         <div className="flex items-center gap-1">
           <div className="flex flex-col gap-1 sm:flex-row">
-            <button 
-              onClick={() => onEdit(item)}
-              className="p-2 text-stone-300 hover:text-natural-primary transition-colors bg-stone-50 rounded-xl"
-            >
-              <Edit2 size={14} />
-            </button>
-            <button 
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(item.id);
-              }}
-              className="p-2 text-stone-300 hover:text-red-500 transition-colors bg-stone-50 rounded-xl active:scale-95"
-              title={i18n.common.delete}
-            >
-              <Trash2 size={14} />
-            </button>
+            {typeof onEdit === 'function' && (
+              <button 
+                onClick={() => onEdit(item)}
+                className="p-2 text-stone-300 hover:text-natural-primary transition-colors bg-stone-50 rounded-xl"
+              >
+                <Edit2 size={14} />
+              </button>
+            )}
+            {typeof onDelete === 'function' && (
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(item.id);
+                }}
+                className="p-2 text-stone-300 hover:text-red-500 transition-colors bg-stone-50 rounded-xl active:scale-95"
+                title={i18n.common.delete}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
           </div>
           <button 
             onClick={() => setIsExpanded(!isExpanded)}
@@ -130,8 +134,8 @@ export const FoodItemCard: React.FC<FoodItemCardProps> = ({
                 <AmountAdjuster 
                   amount={item.amount} 
                   unit={item.unit} 
-                  onAdjust={(delta) => onAdjust(item.id, delta)} 
-                  onSet={(val) => onSet(item.id, val)} 
+                  onAdjust={(delta) => onAdjust?.(item.id, delta)} 
+                  onSet={(val) => onSet?.(item.id, val)} 
                 />
               </div>
 

@@ -7,8 +7,8 @@ import { formatNutritionValue } from '../../utils/nutrition';
 
 interface ParsedFoodDraftCardProps {
   draft: ParsedFridgeItemDraft;
-  onEdit: () => void;
-  onDelete: () => void;
+  onEdit?: () => void;
+  onDelete?: () => void;
   isExisting: boolean;
   shouldMerge: boolean;
   onToggleMerge: () => void;
@@ -60,16 +60,20 @@ export const ParsedFoodDraftCard: React.FC<ParsedFoodDraftCardProps> = ({
           >
             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </button>
-          <button onClick={onEdit} className="p-2 text-stone-300 hover:text-natural-primary transition-colors bg-stone-50 rounded-xl">
-            <Edit2 size={14} />
-          </button>
-          <button 
-            type="button"
-            onClick={onDelete} 
-            className="p-2 text-stone-300 hover:text-red-500 transition-colors bg-stone-50 rounded-xl"
-          >
-            <Trash2 size={14} />
-          </button>
+          {typeof onEdit === 'function' && (
+            <button onClick={onEdit} className="p-2 text-stone-300 hover:text-natural-primary transition-colors bg-stone-50 rounded-xl">
+              <Edit2 size={14} />
+            </button>
+          )}
+          {typeof onDelete === 'function' && (
+            <button 
+              type="button"
+              onClick={onDelete} 
+              className="p-2 text-stone-300 hover:text-red-500 transition-colors bg-stone-50 rounded-xl"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
 

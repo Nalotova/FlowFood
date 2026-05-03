@@ -14,11 +14,12 @@ import { QuickSnackForm } from '../components/foodLog/QuickSnackForm';
 import { PhotoRecognitionModal } from '../components/fridge/PhotoFoodRecognitionModal';
 import { cookingHistoryService } from '../services/cookingHistoryService';
 import { estimateFoodFromPhotos, FoodEstimationResult } from '../services/photoFoodEstimationService';
+import { RecipeDetailModal } from '../components/cooking/RecipeDetailModal';
 import { useApp } from '../contexts/AppContext';
 import { CookingResult } from '../types/cooking';
 
 export const HistoryPage: React.FC = () => {
-  const { activeHousehold } = useApp();
+  const { activeHousehold, permissions, userRole } = useApp();
   const { entries, deleteEntry, addEntry, loading: logLoading } = useFoodLog();
   const { items, setAmount } = useFridge();
   const { profiles } = useProfiles();
@@ -28,6 +29,7 @@ export const HistoryPage: React.FC = () => {
   const [view, setView] = useState<'log' | 'cooking'>('log');
   const [cookingHistory, setCookingHistory] = useState<CookingResult[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [selectedResult, setSelectedResult] = useState<CookingResult | null>(null);
 
   const householdId = activeHousehold?.id;
 
@@ -59,49 +61,52 @@ export const HistoryPage: React.FC = () => {
 
   return (
     <div className="space-y-6 pt-2 pb-32">
-      <div className="flex justify-between items-end">
-        <div className="space-y-4">
-          <h1 className="text-3xl font-serif font-bold text-natural-primary">{i18n.navigation.history}</h1>
-          <div className="flex bg-stone-100 p-1 rounded-2xl w-fit">
-            <button 
-              onClick={() => setView('log')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                view === 'log' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
-              }`}
-            >
-              Дневник
-            </button>
-            <button 
-              onClick={() => setView('cooking')}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                view === 'cooking' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
-              }`}
-            >
-              Рецепты
-            </button>
+      <div className="space-y-4">
+        <div className="flex justify-between items-end">
+          <div className="space-y-4">
+            <h1 className="text-3xl font-serif font-bold text-natural-primary">{i18n.navigation.history}</h1>
+            <div className="flex bg-stone-100 p-1 rounded-2xl w-fit">
+              <button 
+                onClick={() => setView('log')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  view === 'log' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+                }`}
+              >
+                Дневник
+              </button>
+              <button 
+                onClick={() => setView('cooking')}
+                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  view === 'cooking' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+                }`}
+              >
+                Рецепты
+              </button>
+            </div>
           </div>
-        </div>
-        
-        {view === 'log' && (
-          <div className="flex gap-2">
+
+          {view === 'log' && permissions.canEdit && (
             <button 
               onClick={() => setIsPhotoModalOpen(true)}
-              className="flex items-center space-x-2 bg-white px-4 py-2 rounded-full text-stone-600 border border-stone-100 hover:text-natural-primary transition-colors active:scale-95"
+              className="flex items-center space-x-2 bg-white px-4 py-3 rounded-full text-stone-600 border border-stone-100 hover:text-natural-primary transition-colors active:scale-95 shadow-sm"
               title="Добавить по фото"
             >
-              <Camera size={16} />
+              <Camera size={18} />
             </button>
-            <button 
-              onClick={() => {
-                setEstimationResult(null);
-                setIsSnackOpen(true);
-              }}
-              className="flex items-center space-x-2 bg-natural-muted px-4 py-2 rounded-full text-stone-600 border border-stone-100 hover:text-natural-primary transition-colors active:scale-95"
-            >
-              <Plus size={16} />
-              <span className="text-[10px] font-black uppercase tracking-widest">{i18n.foodLog.addUnplanned}</span>
-            </button>
-          </div>
+          )}
+        </div>
+
+        {(view === 'log' && (permissions.canEdit || userRole === 'owner')) && (
+          <button 
+            onClick={() => {
+              setEstimationResult(null);
+              setIsSnackOpen(true);
+            }}
+            className="w-full flex items-center justify-center space-x-3 bg-natural-primary py-5 rounded-[24px] text-white hover:bg-natural-primary/90 transition-all active:scale-95 shadow-lg shadow-natural-primary/10"
+          >
+            <Plus size={20} />
+            <span className="text-sm font-black uppercase tracking-widest">{i18n.foodLog.addUnplanned}</span>
+          </button>
         )}
       </div>
 
@@ -147,6 +152,13 @@ export const HistoryPage: React.FC = () => {
               setIsSnackOpen(false);
               setEstimationResult(null);
             }}
+          />
+        )}
+
+        {selectedResult && (
+          <RecipeDetailModal 
+            result={selectedResult}
+            onClose={() => setSelectedResult(null)}
           />
         )}
       </AnimatePresence>
@@ -206,12 +218,14 @@ export const HistoryPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button 
-                    onClick={() => deleteEntry(entry.id)}
-                    className="p-3 text-stone-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {permissions.canEdit && (
+                    <button 
+                      onClick={() => deleteEntry(entry.id)}
+                      className="p-3 text-stone-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -240,7 +254,8 @@ export const HistoryPage: React.FC = () => {
                   layout
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="bg-white p-5 rounded-[32px] border border-stone-100 shadow-sm space-y-3"
+                  onClick={() => setSelectedResult(res)}
+                  className="bg-white p-5 rounded-[32px] border border-stone-100 shadow-sm space-y-3 cursor-pointer hover:border-natural-primary/20 hover:shadow-md transition-all active:scale-[0.98]"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
@@ -252,15 +267,20 @@ export const HistoryPage: React.FC = () => {
                          </p>
                        </div>
                     </div>
-                    <button 
-                      onClick={async () => {
-                        await cookingHistoryService.deleteResult(res.id, householdId);
-                        fetchCookingHistory();
-                      }}
-                      className="p-2 text-stone-200 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    {permissions.canEdit && (
+                      <button 
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`${i18n.common.delete}?`)) {
+                            await cookingHistoryService.deleteResult(res.id, householdId);
+                            fetchCookingHistory();
+                          }
+                        }}
+                        className="p-2 text-stone-200 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </div>
                   
                   <div className="flex flex-wrap gap-2">

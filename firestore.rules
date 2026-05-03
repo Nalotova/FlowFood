@@ -11,7 +11,10 @@ service cloud.firestore {
     function isSignedIn() { return request.auth != null; }
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function isMember(householdId) {
-      return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.memberUserIds;
+      return isSignedIn() && (
+        request.auth.uid == get(/databases/$(database)/documents/households/$(householdId)).data.ownerUserId ||
+        request.auth.uid in get(/databases/$(database)/documents/households/$(householdId)).data.get('memberUserIds', [])
+      );
     }
 
     // 1. User Profiles (Private)
@@ -21,9 +24,15 @@ service cloud.firestore {
 
     // 2. Households
     match /households/{householdId} {
-      allow get: if isSignedIn() && request.auth.uid in resource.data.memberUserIds;
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerUserId ||
+        request.auth.uid in resource.data.get('memberUserIds', [])
+      );
       allow create: if isSignedIn();
-      allow update: if isSignedIn() && request.auth.uid in resource.data.memberUserIds;
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.ownerUserId ||
+        request.auth.uid in resource.data.get('memberUserIds', [])
+      );
 
       // Profiles subcollection
       match /profiles/{profileId} {
@@ -44,6 +53,25 @@ service cloud.firestore {
       match /cookingHistory/{resultId} {
         allow read, write: if isMember(householdId);
       }
+    }
+
+    // 3. Invites
+    match /householdInvites/{inviteId} {
+      allow read: if isSignedIn() && (
+        request.auth.token.email.lower() == resource.data.invitedEmail ||
+        request.auth.uid == resource.data.invitedByUserId ||
+        isMember(resource.data.householdId)
+      );
+      allow create: if isSignedIn() && isMember(request.resource.data.householdId);
+      allow update: if isSignedIn() && (
+        request.auth.token.email.lower() == resource.data.invitedEmail ||
+        request.auth.uid == resource.data.invitedByUserId ||
+        isMember(resource.data.householdId)
+      );
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.invitedByUserId ||
+        request.auth.uid == get(/databases/$(database)/documents/households/$(resource.data.householdId)).data.ownerUserId
+      );
     }
   }
 }

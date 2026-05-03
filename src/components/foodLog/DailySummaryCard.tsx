@@ -99,8 +99,15 @@ export const DailySummaryCard: React.FC<DailySummaryCardProps> = ({
                   </div>
                 </div>
                 <button
-                  onClick={() => onDeleteEntry(entry.id)}
-                  className="p-2 text-stone-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                  type="button"
+                  onClick={() => {
+                    if (typeof onDeleteEntry === 'function') {
+                      onDeleteEntry(entry.id);
+                    } else {
+                      console.error("onDeleteEntry is not a function");
+                    }
+                  }}
+                  className="p-3 -m-1 text-stone-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 touch-manipulation"
                 >
                   <Trash2 size={14} />
                 </button>

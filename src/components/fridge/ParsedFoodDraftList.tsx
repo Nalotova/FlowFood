@@ -9,10 +9,10 @@ import { i18n } from '../../i18n/ru';
 interface ParsedFoodDraftListProps {
   drafts: ParsedFridgeItemDraft[];
   existingItems: FoodItem[];
-  onEdit: (draft: ParsedFridgeItemDraft) => void;
-  onDelete: (tempId: string) => void;
-  onSaveAll: (drafts?: ParsedFridgeItemDraft[], mergeSettings?: Record<string, boolean>) => void;
-  onCancel: () => void;
+  onEdit?: (draft: ParsedFridgeItemDraft) => void;
+  onDelete?: (tempId: string) => void;
+  onSaveAll?: (drafts?: ParsedFridgeItemDraft[], mergeSettings?: Record<string, boolean>) => void;
+  onCancel?: () => void;
 }
 
 export const ParsedFoodDraftList: React.FC<ParsedFoodDraftListProps> = ({
@@ -62,8 +62,8 @@ export const ParsedFoodDraftList: React.FC<ParsedFoodDraftListProps> = ({
           <ParsedFoodDraftCard
             key={draft.tempId}
             draft={draft}
-            onEdit={() => onEdit(draft)}
-            onDelete={() => onDelete(draft.tempId)}
+            onEdit={typeof onEdit === 'function' ? () => onEdit(draft) : undefined}
+            onDelete={typeof onDelete === 'function' ? () => onDelete(draft.tempId) : undefined}
             isExisting={checkIfDuplicate(draft)}
             shouldMerge={!!mergeSettings[draft.tempId]}
             onToggleMerge={() => toggleMerge(draft.tempId)}
@@ -79,7 +79,7 @@ export const ParsedFoodDraftList: React.FC<ParsedFoodDraftListProps> = ({
           {i18n.common.cancel}
         </button>
         <button
-          onClick={() => onSaveAll(drafts, mergeSettings)}
+          onClick={() => onSaveAll?.(drafts, mergeSettings)}
           disabled={!canSaveAll || drafts.length === 0}
           className={`flex-[2] py-4 rounded-[32px] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 transition-all ${
             canSaveAll && drafts.length > 0

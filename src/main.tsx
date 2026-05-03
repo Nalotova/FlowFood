@@ -4,6 +4,8 @@ import App from './App.tsx';
 import './index.css';
 import { AppProvider } from './contexts/AppContext';
 
+console.log('MAIN TSX EXECUTING - DEBUG 2026-05-03');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppProvider>

@@ -8,6 +8,7 @@ import { FoodItem, FoodCategory } from '../types/food';
 import { Plus, Camera, ShoppingBag, Wand2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useFridge } from '../hooks/useFridge';
+import { useApp } from '../contexts/AppContext';
 import { FoodItemCard } from '../components/fridge/FoodItemCard';
 import { FoodItemForm } from '../components/fridge/FoodItemForm';
 import { FridgeFilters } from '../components/fridge/FridgeFilters';
@@ -23,6 +24,7 @@ import { i18n } from '../i18n/ru';
 import { DiagnosticsPanel } from '../components/cooking/DiagnosticsPanel';
 
 export const FridgePage: React.FC = () => {
+  const { user, userAppProfile, permissions } = useApp();
   const { items, addFoodItem, updateFoodItem, deleteFoodItem, adjustAmount, setAmount, loading } = useFridge();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
@@ -44,17 +46,20 @@ export const FridgePage: React.FC = () => {
   }, [items, search, selectedCategory]);
 
   const handleAddNew = () => {
+    if (!permissions.canEdit) return;
     setEditingItem(undefined);
     setIsFormOpen(true);
   };
 
   const handleEdit = (item: FoodItem) => {
+    if (!permissions.canEdit) return;
     setEditingItem(item);
     setEditingDraftId(null);
     setIsFormOpen(true);
   };
 
   const handleAiParse = async (text: string, images: string[]) => {
+    if (!permissions.canEdit) return;
     setIsAiParsing(true);
     try {
       const result = await parseFridgeInput({ 
@@ -71,6 +76,7 @@ export const FridgePage: React.FC = () => {
   };
 
   const handleSaveDrafts = async (draftsToSave?: ParsedFridgeItemDraft[], mergeSettings?: Record<string, boolean>) => {
+    if (!permissions.canEdit) return;
     const targetDrafts = draftsToSave || aiDrafts;
     
     for (const draft of targetDrafts) {
@@ -96,16 +102,19 @@ export const FridgePage: React.FC = () => {
   };
 
   const handleDeleteDraft = (tempId: string) => {
+    if (!permissions.canEdit) return;
     setAiDrafts(prev => prev.filter(d => d.tempId !== tempId));
   };
 
   const handleEditDraft = (draft: ParsedFridgeItemDraft) => {
+    if (!permissions.canEdit) return;
     setEditingItem(draft);
     setEditingDraftId(draft.tempId);
     setIsFormOpen(true);
   };
 
   const handlePhotoResult = (result: PhotoRecognitionResult) => {
+    if (!permissions.canEdit) return;
     if (result.draft) {
       // Pre-fill amount based on package info
       const draft = { ...result.draft };
@@ -124,6 +133,7 @@ export const FridgePage: React.FC = () => {
   };
 
   const handleSave = async (itemData: Omit<FoodItem, "id" | "createdAt" | "updatedAt">) => {
+    if (!permissions.canEdit) return;
     if (editingDraftId) {
       setAiDrafts(prev => prev.map(d => 
         d.tempId === editingDraftId 
@@ -141,6 +151,7 @@ export const FridgePage: React.FC = () => {
   };
 
   const handlePhotoAdd = () => {
+    if (!permissions.canEdit) return;
     setIsPhotoModalOpen(true);
   };
 
@@ -178,27 +189,31 @@ export const FridgePage: React.FC = () => {
 
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-serif font-bold text-natural-primary">{i18n.fridge.title}</h1>
-        <div className="flex gap-2">
-          <button 
-            onClick={handlePhotoAdd}
-            className="w-10 h-10 bg-natural-muted rounded-full flex items-center justify-center text-stone-400 border border-stone-100 hover:text-natural-primary transition-colors"
-          >
-            <Camera size={18} />
-          </button>
-          <button 
-            onClick={handleAddNew}
-            className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm hover:bg-stone-200 transition-colors"
-          >
-            <Plus size={20} />
-          </button>
-        </div>
+        {permissions.canEdit && (
+          <div className="flex gap-2">
+            <button 
+              onClick={handlePhotoAdd}
+              className="w-10 h-10 bg-natural-muted rounded-full flex items-center justify-center text-stone-400 border border-stone-100 hover:text-natural-primary transition-colors"
+            >
+              <Camera size={18} />
+            </button>
+            <button 
+              onClick={handleAddNew}
+              className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm hover:bg-stone-200 transition-colors"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
-      <AiFridgeInput 
-        onParse={handleAiParse}
-        onManualAdd={handleAddNew}
-        isLoading={isAiParsing}
-      />
+      {permissions.canEdit && (
+        <AiFridgeInput 
+          onParse={handleAiParse}
+          onManualAdd={handleAddNew}
+          isLoading={isAiParsing}
+        />
+      )}
 
       {aiDrafts.length > 0 && (
         <motion.div
@@ -261,10 +276,10 @@ export const FridgePage: React.FC = () => {
               <FoodItemCard
                 key={item.id}
                 item={item}
-                onEdit={handleEdit}
-                onDelete={deleteFoodItem}
-                onAdjust={adjustAmount}
-                onSet={setAmount}
+                onEdit={permissions.canEdit ? handleEdit : undefined}
+                onDelete={permissions.canEdit ? deleteFoodItem : undefined}
+                onAdjust={permissions.canEdit ? adjustAmount : undefined}
+                onSet={permissions.canEdit ? setAmount : undefined}
               />
             ))}
           </div>

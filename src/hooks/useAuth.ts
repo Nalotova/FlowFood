@@ -10,12 +10,20 @@ import { authService } from '../services/authService';
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const unsubscribe = authService.onAuthChanged((currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
+    const unsubscribe = authService.onAuthChanged(
+      (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Auth error:", err);
+        setError(err);
+        setLoading(false);
+      }
+    );
 
     return () => unsubscribe();
   }, []);
@@ -23,6 +31,7 @@ export function useAuth() {
   return {
     user,
     loading,
+    error,
     signInWithGoogle: authService.signInWithGoogle,
     signOut: authService.signOut
   };

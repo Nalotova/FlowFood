@@ -10,13 +10,19 @@ import {
   User
 } from 'firebase/auth';
 import { auth, googleProvider, db } from './firebase';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 import { UserAppProfile, Household } from '../types/household';
+import { handleFirestoreError, OperationType } from '../utils/firestoreError';
 
 export const authService = {
   signInWithGoogle: async () => {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      return result.user;
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'auth/google');
+      throw error;
+    }
   },
 
   signOut: async () => {
@@ -27,8 +33,8 @@ export const authService = {
     return auth.currentUser;
   },
 
-  onAuthChanged: (callback: (user: User | null) => void) => {
-    return onAuthStateChanged(auth, callback);
+  onAuthChanged: (callback: (user: User | null) => void, errorCallback?: (error: any) => void) => {
+    return onAuthStateChanged(auth, callback, errorCallback);
   },
 
   ensureUserAndHousehold: async (user: User): Promise<{ userAppProfile: UserAppProfile; activeHousehold: Household }> => {
@@ -47,19 +53,26 @@ export const authService = {
           if (householdSnap.exists()) {
             return { 
               userAppProfile, 
-              activeHousehold: householdSnap.data() as Household 
+              activeHousehold: { id: householdSnap.id, ...householdSnap.data() } as Household 
             };
           }
         }
         
         // Fallback: Profile exists but household is missing or corrupted
         console.warn("Active household missing, attempting to recover...");
-        const fallbackHouseholdId = userAppProfile.householdIds?.[0] || `h_${Math.random().toString(36).substring(2, 9)}`;
+        const fallbackHouseholdId = userAppProfile.householdIds?.[0] || doc(collection(db, 'households')).id;
         const household: Household = {
           id: fallbackHouseholdId,
           name: "Мой дом (восстановлен)",
           ownerUserId: user.uid,
           memberUserIds: [user.uid],
+          members: [{
+            userId: user.uid,
+            email: user.email || "",
+            displayName: user.displayName || "",
+            role: "owner",
+            joinedAt: new Date().toISOString()
+          }],
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -80,19 +93,26 @@ export const authService = {
 
       // New user checkout
       console.log("Creating new user profile and household...");
-      const newHouseholdId = `h_${Math.random().toString(36).substring(2, 9)}`;
+      const newHouseholdId = doc(collection(db, 'households')).id;
       const household: Household = {
         id: newHouseholdId,
         name: "Мой дом",
         ownerUserId: user.uid,
         memberUserIds: [user.uid],
+        members: [{
+          userId: user.uid,
+          email: user.email || "",
+          displayName: user.displayName || "",
+          role: "owner",
+          joinedAt: new Date().toISOString()
+        }],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
       const newUserProfile: UserAppProfile = {
         uid: user.uid,
-        email: user.email || undefined,
+        email: user.email!,
         displayName: user.displayName || undefined,
         householdIds: [newHouseholdId],
         activeHouseholdId: newHouseholdId,
@@ -107,7 +127,8 @@ export const authService = {
       return { userAppProfile: newUserProfile, activeHousehold: household };
     } catch (error: any) {
       console.error("Critical error in ensureUserAndHousehold:", error);
-      throw new Error(`Ошибка базы данных: ${error?.message || 'Неизвестно'}`);
+      handleFirestoreError(error, OperationType.GET, 'users/profile-init');
+      throw error;
     }
   }
 };

@@ -257,12 +257,12 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
         </section>
       </div>
 
-      <div className="fixed bottom-24 left-0 right-0 px-6 flex justify-center pointer-events-none">
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-md border-t border-stone-100 safe-bottom z-20">
         <button
           type="submit"
-          className="pointer-events-auto w-full max-w-sm py-5 bg-natural-primary text-white rounded-[32px] font-black uppercase tracking-widest shadow-xl shadow-stone-200 active:scale-95 transition-all"
+          className="w-full py-4 bg-natural-primary text-white rounded-[24px] font-black uppercase tracking-widest shadow-xl shadow-natural-primary/10 active:scale-95 transition-all"
         >
-          {initialData ? 'Сохранить изменения' : 'Внести в холодильник'}
+          {initialData ? i18n.common.save : i18n.fridge.addProduct}
         </button>
       </div>
     </form>

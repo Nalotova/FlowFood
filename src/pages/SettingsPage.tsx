@@ -5,8 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { LogOut, CloudUpload, User, ShieldCheck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { LogOut, CloudUpload, User, ShieldCheck, CheckCircle2, AlertCircle, Loader2, UserPlus, Users, Trash2, Shield, Settings2, Home } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 import { i18n } from '../i18n/ru';
 import { DiagnosticsPanel } from '../components/cooking/DiagnosticsPanel';
 import { profileServiceLocal } from '../services/profileService.local';
@@ -17,9 +17,11 @@ import { cookingHistoryService } from '../services/cookingHistoryService';
 import { profileService } from '../services/profileService';
 import { fridgeService } from '../services/fridgeService';
 import { foodLogService } from '../services/foodLogService';
+import { householdService } from '../services/householdService';
+import { HouseholdManager } from '../components/settings/HouseholdManager';
 
 export const SettingsPage: React.FC = () => {
-  const { user, signOut, activeHousehold, refreshData } = useApp();
+  const { user, signOut, activeHousehold, userAppProfile, permissions, refreshData, switchHousehold } = useApp();
   const [migrating, setMigrating] = useState(false);
   const [hasLocalData, setHasLocalData] = useState(false);
   const [migrationStats, setMigrationStats] = useState({
@@ -83,7 +85,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pt-2 pb-24">
+    <div className="space-y-8 pt-2 pb-24">
       <h1 className="text-3xl font-serif font-bold text-natural-primary">{i18n.navigation.settings}</h1>
 
       {/* User Card */}
@@ -107,17 +109,30 @@ export const SettingsPage: React.FC = () => {
         </button>
       </div>
 
-      {/* Household Info */}
-      <div className="space-y-3">
-        <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">Активный дом</h4>
-        <div className="bg-natural-primary/5 rounded-[32px] p-6 border border-natural-primary/10 space-y-2">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={14} className="text-natural-primary" />
-            <h3 className="text-sm font-black text-natural-primary italic">{activeHousehold?.name}</h3>
+      {/* Household Selector (if multi-household) */}
+      {userAppProfile && userAppProfile.householdIds.length > 1 && (
+        <div className="space-y-3">
+          <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">Переключить дом</h4>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 px-1">
+            {userAppProfile.householdIds.map((hid) => (
+              <button
+                key={hid}
+                onClick={() => switchHousehold(hid)}
+                className={`flex-shrink-0 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${
+                  hid === activeHousehold?.id 
+                    ? 'bg-natural-primary text-white border-natural-primary shadow-lg shadow-natural-primary/20' 
+                    : 'bg-white text-stone-400 border-stone-100 hover:border-stone-200'
+                }`}
+              >
+                Дом {hid.slice(-4).toUpperCase()}
+              </button>
+            ))}
           </div>
-          <p className="text-[9px] text-natural-primary/60 font-bold uppercase tracking-[0.1em]">Индивидуальное пространство в облаке</p>
         </div>
-      </div>
+      )}
+
+      {/* Household Management */}
+      <HouseholdManager />
 
       {/* Migration Card */}
       {hasLocalData && (
@@ -172,6 +187,21 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       <DiagnosticsPanel />
+
+      {/* Debug Info for Role (Temporary) */}
+      <div className="mt-8 p-4 bg-stone-900 rounded-3xl text-[10px] font-mono text-stone-500 space-y-1">
+        <p className="text-stone-300 font-bold mb-2 uppercase tracking-widest">Диагностика роли</p>
+        <p>User UID: {user?.uid}</p>
+        <p>Household ID: {activeHousehold?.id}</p>
+        <p>Owner UID: {activeHousehold?.ownerUserId}</p>
+        <p>Computed Role: {permissions.canInvite ? 'Owner/Admin' : 'Viewer/Member'}</p>
+        <p>Actual Role: {(() => {
+          if (activeHousehold?.ownerUserId === user?.uid) return 'owner (by ID match)';
+          return activeHousehold?.members?.find(m => m.userId === user?.uid)?.role || 'viewer (fallback)';
+        })()}</p>
+        <p>Members Length: {activeHousehold?.members?.length || 0}</p>
+        <p>Is Owner By ID: {user?.uid && activeHousehold?.ownerUserId && user.uid === activeHousehold.ownerUserId ? 'YES' : 'NO'}</p>
+      </div>
     </div>
   );
 };

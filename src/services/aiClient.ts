@@ -25,7 +25,7 @@ export interface AiCallInput {
   responseMimeType?: string;
 }
 
-export const callAiModel = async (input: AiCallInput): Promise<string> => {
+export const callAiModel = async (input: AiCallInput, attempts = 2): Promise<string> => {
   const ai = getAiClient();
   const { prompt, images, systemInstruction, responseMimeType = "application/json" } = input;
   
@@ -34,7 +34,6 @@ export const callAiModel = async (input: AiCallInput): Promise<string> => {
     
     if (images && images.length > 0) {
       images.forEach(base64 => {
-        // Extract mime type if present, default to image/jpeg
         const mimeType = base64.match(/data:([^;]+);base64,/)?.[1] || "image/jpeg";
         const cleanBase64 = base64.replace(/^data:[^;]+;base64,/, "");
         parts.push({
@@ -46,8 +45,9 @@ export const callAiModel = async (input: AiCallInput): Promise<string> => {
       });
     }
 
+    const modelName = import.meta.env.VITE_GEMINI_MODEL_NAME || "gemini-2.0-flash";
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: modelName,
       contents: [{ role: "user", parts }],
       config: {
         systemInstruction: systemInstruction,
@@ -56,8 +56,19 @@ export const callAiModel = async (input: AiCallInput): Promise<string> => {
     });
 
     return response.text || "";
-  } catch (error) {
-    console.error("AI Call failed:", error);
+  } catch (error: any) {
+    console.error(`AI Call failed (attempts remaining: ${attempts}):`, error);
+    
+    // Check for 404 or model error
+    if (error?.status === 404 || error?.message?.includes('404') || error?.message?.includes('model not found')) {
+      throw new Error("Модель ИИ недоступна. Проверьте настройки модели в окружении (VITE_GEMINI_MODEL_NAME).");
+    }
+
+    if (attempts > 0) {
+      // Wait bit before retry
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return callAiModel(input, attempts - 1);
+    }
     throw error;
   }
 };

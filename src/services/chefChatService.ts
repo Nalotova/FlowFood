@@ -70,9 +70,14 @@ export const chefChatService = {
     const context = {
       currentPlan: currentResult,
       participants: profiles.filter(p => currentResult.portions.some(pr => pr.profileId === p.id)),
-      availableFoodItems: foodItems.filter(f => f.amount > 0),
-      recentFoodLogEntries: foodLogEntries.filter(e => e.date === new Date().toISOString().split('T')[0]),
-      chatHistory: chatHistory.map(h => ({ role: h.role, content: h.content })),
+      // Reduce context size by picking only necessary fields and limiting items
+      availableFoodItems: foodItems
+        .filter(f => f.amount > 0)
+        .map(f => ({ id: f.id, name: f.name, amount: f.amount, unit: f.unit })),
+      recentFoodLogEntries: foodLogEntries
+        .filter(e => e.date === new Date().toISOString().split('T')[0])
+        .slice(-10),
+      chatHistory: chatHistory.slice(-5).map(h => ({ role: h.role, content: h.content })),
       mealType: currentResult.mealType
     };
 
@@ -89,7 +94,16 @@ ${JSON.stringify(context, null, 2)}
         responseMimeType: "application/json"
       });
 
-      const response = JSON.parse(responseText) as ChefChatResponse;
+      // Safer parsing
+      let jsonStr = responseText.trim();
+      if (jsonStr.includes('```')) {
+        const match = jsonStr.match(/```(?:json)?([\s\S]*?)```/);
+        if (match) {
+          jsonStr = match[1].trim();
+        }
+      }
+      
+      const response = JSON.parse(jsonStr) as ChefChatResponse;
       return response;
     } catch (error) {
       console.error("Chef chat service failed:", error);

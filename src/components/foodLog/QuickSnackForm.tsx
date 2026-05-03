@@ -35,6 +35,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
   const activeProfiles = profiles.filter(p => p.isActive);
   const availableFood = foodItems.filter(f => f.amount > 0);
 
+  const [mode, setMode] = useState<'fridge' | 'manual' | 'text' | 'photo'>(initialData ? 'manual' : 'fridge');
   const [profileId, setProfileId] = useState(activeProfiles[0]?.id || '');
   const [foodId, setFoodId] = useState('');
   const [amount, setAmount] = useState<number>(initialData ? 1 : 0);
@@ -46,7 +47,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
   const [manualFat, setManualFat] = useState<number>(initialData?.fat || 0);
   const [manualCarbs, setManualCarbs] = useState<number>(initialData?.carbs || 0);
 
-  const isManualMode = !subtractFromFridge || !!initialData;
+  const isManualMode = mode !== 'fridge';
 
   const selectedFood = useMemo(() => foodItems.find(f => f.id === foodId), [foodId, foodItems]);
   const selectedProfile = useMemo(() => profiles.find(p => p.id === profileId), [profileId, profiles]);
@@ -130,60 +131,113 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
         </div>
 
         <div className="p-8 space-y-6 max-h-[80vh] overflow-y-auto no-scrollbar">
-          {/* Profile Select */}
-          <div className="space-y-2">
-            <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whoAte}</label>
-            <div className="flex flex-wrap gap-2">
-              {activeProfiles.map(p => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setProfileId(p.id)}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                    profileId === p.id 
-                      ? 'bg-stone-800 text-white border-stone-800' 
-                      : 'bg-white text-stone-600 border-stone-100'
-                  }`}
-                >
-                  {p.name}
-                </button>
-              ))}
-            </div>
+          {/* Mode Selector Tabs */}
+          <div className="flex bg-stone-100 p-1 rounded-2xl">
+            <button
+              type="button"
+              onClick={() => setMode('fridge')}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'fridge' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+              }`}
+            >
+              Холодильник
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('manual')}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'manual' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+              }`}
+            >
+              Вручную
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('text')}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'text' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+              }`}
+            >
+              Текст
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('photo')}
+              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+                mode === 'photo' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
+              }`}
+            >
+              По фото
+            </button>
           </div>
 
-          {/* Food Select or Manual Info */}
-          {!initialData && (
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3 px-2">
-                <button
-                  type="button"
-                  onClick={() => setSubtractFromFridge(!subtractFromFridge)}
-                  className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
-                    subtractFromFridge ? 'bg-natural-primary border-natural-primary text-white' : 'bg-white border-stone-200'
-                  }`}
-                >
-                  {subtractFromFridge && <Check size={14} strokeWidth={4} />}
-                </button>
-                <span className="text-[11px] font-bold text-stone-600">{i18n.foodLog.subtract}</span>
+          {mode === 'photo' && (
+             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 bg-stone-50 rounded-[32px] border border-dashed border-stone-200">
+               <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-stone-300">
+                 <X size={24} />
+               </div>
+               <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">
+                 Будет добавлено позже
+               </p>
+               <p className="text-[9px] text-stone-300 px-8">Используйте кнопку камеры в Дневнике для анализа фото</p>
+             </div>
+          )}
+
+          {mode === 'text' && (
+             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 bg-stone-50 rounded-[32px] border border-dashed border-stone-200">
+               <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center text-stone-300">
+                 <X size={24} />
+               </div>
+               <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest">
+                 Будет добавлено позже
+               </p>
+               <p className="text-[9px] text-stone-300 px-8">Умное описание текстом находится в разработке</p>
+             </div>
+          )}
+
+          {(mode === 'fridge' || mode === 'manual') && (
+            <>
+              {/* Profile Select */}
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whoAte}</label>
+                <div className="flex flex-wrap gap-2">
+                  {activeProfiles.map(p => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => setProfileId(p.id)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
+                        profileId === p.id 
+                          ? 'bg-stone-800 text-white border-stone-800' 
+                          : 'bg-white text-stone-600 border-stone-100'
+                      }`}
+                    >
+                      {p.name}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {!isManualMode ? (
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whatAte}</label>
-                  <select
-                    value={foodId}
-                    onChange={(e) => setFoodId(e.target.value)}
-                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-medium outline-none appearance-none"
-                  >
-                    <option value="">Выберите продукт из холодильника...</option>
-                    {availableFood.map(f => (
-                      <option key={f.id} value={f.id}>{f.name} ({f.amount} {f.unit})</option>
-                    ))}
-                  </select>
+              {/* Food Select or Manual Info */}
+              {mode === 'fridge' ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whatAte}</label>
+                    <select
+                      value={foodId}
+                      onChange={(e) => setFoodId(e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-medium outline-none appearance-none"
+                    >
+                      <option value="">Выберите продукт из холодильника...</option>
+                      {availableFood.map(f => (
+                        <option key={f.id} value={f.id}>{f.name} ({f.amount} {f.unit})</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                   <div className="space-y-1.5">
+                  <div className="space-y-1.5">
                     <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">Название еды</label>
                     <input
                       type="text"
@@ -235,10 +289,10 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
 
-          {initialData && (
+          {initialData && mode === 'manual' && (
             <div className="bg-natural-primary/5 p-6 rounded-3xl border border-natural-primary/10 space-y-4">
               <div className="flex items-center gap-2">
                 <Info size={14} className="text-natural-primary" />
@@ -347,10 +401,10 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
           </div>
         </div>
 
-        <div className="p-6 bg-stone-50 flex space-x-3">
+        <div className="p-6 bg-stone-50 safe-bottom">
           <button
             type="submit"
-            className="flex-1 py-4 bg-natural-primary text-white rounded-[24px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center space-x-2"
+            className="w-full py-4 bg-natural-primary text-white rounded-[24px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all flex items-center justify-center space-x-2"
           >
             <Check size={18} />
             <span>{i18n.common.save}</span>

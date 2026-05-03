@@ -15,6 +15,7 @@ import {
   InventoryMovement,
   MealPortionItem
 } from '../types';
+import { DishFeasibility } from '../types/dishPlanning';
 import { calculateFoodNutrition, sumMealPortionItems, getFoodWeightInGrams } from '../utils/nutrition';
 import { callAiModel } from './aiClient';
 
@@ -58,17 +59,19 @@ export const aiCookingService = {
     profiles,
     foodItems,
     foodLogEntries = [],
-    targetInfo
+    targetInfo,
+    feasibility
   }: {
     request: CookingRequest;
     profiles: UserProfile[];
     foodItems: FoodItem[];
     foodLogEntries?: FoodLogEntry[];
     targetInfo: MealTargetInfo[];
+    feasibility?: DishFeasibility;
   }): Promise<CookingResult> => {
     
     // 1. Build prompt
-    const prompt = buildCookingPrompt(request, profiles, foodItems, foodLogEntries, targetInfo);
+    const prompt = buildCookingPrompt(request, profiles, foodItems, foodLogEntries, targetInfo, feasibility);
     const systemInstruction = getSystemInstruction();
 
     // 2. Call AI
@@ -112,7 +115,17 @@ export const aiCookingService = {
       },
       userFeedback: userMessage,
       participants: targetInfo.map(info => {
-        const p = profiles.find(profile => profile.id === info.profileId)!;
+        const p = profiles.find(profile => profile.id === info.profileId);
+        if (!p) {
+          console.warn("Profile not found for info.profileId:", info.profileId);
+          return {
+            profileId: info.profileId,
+            name: "Unknown",
+            targetMealKcal: info.targetMealKcal,
+            allergies: [],
+            forbiddenFoods: []
+          };
+        }
         return {
           profileId: p.id,
           name: p.name,
@@ -180,6 +193,8 @@ const getSystemInstruction = () => `
 12. В поле "foodItemId" ОБЯЗАТЕЛЬНО записывай "id" продукта из списка availableFoodItems. Это критически важно!
 13. Не предлагай абсурдные порции (например, 2г картошки).
 14. В поле "recipe" ВСЕГДА пиши пошаговый рецепт приготовления.
+15. Если в статусе feasibility указано "can_make_modified", обязательно отрази это в названии блюда (например, "Овощной суп в стиле борща") и объясни замены в explanation.
+16. Если холодильник почти пуст и сбалансированное блюдо создать невозможно, верни "status": "needs_more_food" и в explanation предложи список продуктов для покупки (яйца, крупы, белок).
 
 Философия питания:
 - Простая домашняя еда, но вкусная.
@@ -187,6 +202,7 @@ const getSystemInstruction = () => `
 - Еда должна давать сытость и физически, и психологически.
 - Если можно добавить вкус без роста калорий (специи, зелень, лимон, чеснок) — предлагай это в tasteNotes.
 - Не повторяй один и тот же формат завтрака (например, омлет) слишком часто, если в recentMeals он уже был.
+- Если пользователь просит конкретное блюдо (например, борщ), но не хватает важных ингредиентов, предложи упрощенную версию, не называя её "классической".
 
 Формат ответа строго JSON:
 {
@@ -223,10 +239,12 @@ const buildCookingPrompt = (
   profiles: UserProfile[], 
   foodItems: FoodItem[],
   foodLogEntries: FoodLogEntry[],
-  targetInfo: MealTargetInfo[]
+  targetInfo: MealTargetInfo[],
+  feasibility?: DishFeasibility
 ) => {
   const participants = targetInfo.map(info => {
-    const p = profiles.find(profile => profile.id === info.profileId)!;
+    const p = profiles.find(profile => profile.id === info.profileId);
+    if (!p) return null;
     return {
       profileId: p.id,
       name: p.name,
@@ -288,7 +306,8 @@ const buildCookingPrompt = (
     participants,
     availableFoodItems,
     preferredFoodIds: request.preferredFoodIds,
-    excludedFoodIds: request.excludedFoodIds
+    excludedFoodIds: request.excludedFoodIds,
+    dishFeasibility: feasibility
   }, null, 2);
 };
 
@@ -386,6 +405,10 @@ const validateAiCookingResponse = (data: AiResponse, foodItems: FoodItem[], targ
      throw new Error(data.explanation || "AI could not generate a plan");
   }
 
+  if (data.status === 'needs_more_food') {
+    throw new Error(`Холодильник почти пуст. Для сбалансированного питания рекомендуем докупить: ${data.explanation}`);
+  }
+
   if (!data.portions || !Array.isArray(data.portions)) {
     throw new Error("Invalid structure: portions missing");
   }
@@ -406,7 +429,8 @@ const validateAiCookingResponse = (data: AiResponse, foodItems: FoodItem[], targ
   }
 
   for (const [id, used] of totalUsed.entries()) {
-    const food = foodItems.find(f => f.id === id)!;
+    const food = foodItems.find(f => f.id === id);
+    if (!food) continue;
     // Allow for small rounding errors (0.01)
     if (used > food.amount + 0.01) {
       throw new Error(`AI exceeded available amount for ${food.name}: ${used} > ${food.amount}`);
@@ -422,7 +446,8 @@ const normalizeAndRecalculate = (
 ): CookingResult => {
   const portions: MealPortion[] = aiData.portions.map(aiPortion => {
     const portionItems: MealPortionItem[] = aiPortion.items.map(item => {
-      const food = foodItems.find(f => f.id === item.foodItemId)!;
+      const food = foodItems.find(f => f.id === item.foodItemId);
+      if (!food) return null;
       const grams = getFoodWeightInGrams(food, item.amount);
       const nutrition = calculateFoodNutrition(food, item.amount);
       
@@ -434,7 +459,7 @@ const normalizeAndRecalculate = (
         grams,
         ...nutrition
       };
-    });
+    }).filter(Boolean) as MealPortionItem[];
 
     const totals = sumMealPortionItems(aiPortion.items, foodItems);
     
@@ -461,7 +486,8 @@ const normalizeAndRecalculate = (
   const inventoryAfter: InventoryMovement[] = [];
 
   totalUsedMap.forEach((usedAmount, foodId) => {
-    const food = foodItems.find(f => f.id === foodId)!;
+    const food = foodItems.find(f => f.id === foodId);
+    if (!food) return;
     const nutrition = calculateFoodNutrition(food, usedAmount);
     const totalGrams = getFoodWeightInGrams(food, usedAmount);
 
