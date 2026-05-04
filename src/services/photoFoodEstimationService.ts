@@ -49,12 +49,18 @@ export const estimateFoodFromPhotos = async (input: PhotoRecognitionInput): Prom
   const prompt = `Оцени пищевую ценность блюда на этих фото. ${input.userHint ? `Дополнительная информация: ${input.userHint}` : ''}`;
 
   try {
-    const responseText = await callAiModel({
+    let responseText = await callAiModel({
       prompt,
       images: input.images,
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json"
     });
+
+    // Remove markdown codeblock from response text if present
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      responseText = jsonMatch[1];
+    }
 
     return JSON.parse(responseText) as FoodEstimationResult;
   } catch (error) {
@@ -68,7 +74,7 @@ export const estimateFoodFromPhotos = async (input: PhotoRecognitionInput): Prom
       carbs: 0,
       confidenceScore: 0,
       notes: "Ошибка при обращении к ИИ",
-      warnings: ["Произошла ошибка, попробуйте другое фото или ручной ввод"]
+      warnings: [`Произошла ошибка: ${error instanceof Error ? error.message : String(error)}`]
     };
   }
 };

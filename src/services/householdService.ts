@@ -178,6 +178,7 @@ export const householdService = {
     batch.update(doc(db, HOUSEHOLDS_COLLECTION, invite.householdId), {
       members: arrayUnion(member),
       memberUserIds: arrayUnion(userId),
+      lastAcceptedInviteId: invite.id,
       updatedAt: now
     });
 

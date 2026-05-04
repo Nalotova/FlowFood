@@ -1,6 +1,7 @@
 import { callAiModel } from './aiClient';
 import { PhotoRecognitionInput, PhotoRecognitionResult, RecognizedFoodDraft } from '../types/photoRecognition';
 import { FoodCategory, FoodState } from '../types/food';
+import { normalizeRecognizedFoodDraft } from '../utils/normalizeFoodDraft';
 
 const SYSTEM_INSTRUCTION = `Ты — помощник по распознаванию продуктов по фото упаковки.
 
@@ -53,12 +54,18 @@ export const recognizeFoodFromPhotos = async (input: PhotoRecognitionInput): Pro
   const prompt = `Распознай продукт на этих фото. ${input.userHint ? `Дополнительная информация от пользователя: ${input.userHint}` : ''}`;
 
   try {
-    const responseText = await callAiModel({
+    let responseText = await callAiModel({
       prompt,
       images: input.images,
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json"
     });
+
+    // Remove markdown codeblock from response text if present
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      responseText = jsonMatch[1];
+    }
 
     const result = JSON.parse(responseText) as PhotoRecognitionResult;
     return validateRecognizedFoodResult(result);
@@ -66,7 +73,7 @@ export const recognizeFoodFromPhotos = async (input: PhotoRecognitionInput): Pro
     console.error("Photo recognition service failed:", error);
     return {
       status: "failed",
-      warnings: ["Произошла ошибка при обращении к ИИ"],
+      warnings: [`Произошла ошибка при обращении к ИИ: ${error instanceof Error ? error.message : String(error)}`],
       confidenceScore: 0
     };
   }
@@ -75,8 +82,8 @@ export const recognizeFoodFromPhotos = async (input: PhotoRecognitionInput): Pro
 const validateRecognizedFoodResult = (result: PhotoRecognitionResult): PhotoRecognitionResult => {
   if (!result.draft) return result;
 
-  const warnings = [...(result.warnings || [])];
-  const draft = result.draft;
+  const draft = normalizeRecognizedFoodDraft(result.draft);
+  const warnings = [...(result.warnings || []), ...(draft.warnings || [])];
 
   // Basic validation of types/values
   if (!draft.name) warnings.push("Название продукта не определено");
@@ -88,13 +95,20 @@ const validateRecognizedFoodResult = (result: PhotoRecognitionResult): PhotoReco
 
   if (draft.categories) {
     draft.categories = draft.categories.filter(c => validCategories.includes(c));
+    if (draft.categories.length === 0) draft.categories = ['other'];
+  } else {
+    draft.categories = ['other'];
   }
+  
   if (draft.state && !validStates.includes(draft.state)) {
+    draft.state = 'ready';
+  } else if (!draft.state) {
     draft.state = 'ready';
   }
 
   return {
     ...result,
+    draft,
     warnings: [...new Set(warnings)]
   };
 };

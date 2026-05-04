@@ -224,7 +224,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whatAte}</label>
                     <select
-                      value={foodId}
+                      value={foodId || ''}
                       onChange={(e) => setFoodId(e.target.value)}
                       className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-medium outline-none appearance-none"
                     >

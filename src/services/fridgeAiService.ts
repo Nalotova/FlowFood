@@ -1,6 +1,7 @@
 import { callAiModel } from './aiClient';
 import { FoodItem } from '../types/food';
 import { ParseFridgeAiResult, ParsedFridgeItemDraft, FridgeAiInput } from '../types/fridgeAi';
+import { normalizeParsedFoodDraft } from '../utils/normalizeFoodDraft';
 
 const SYSTEM_INSTRUCTION = `Ты — помощник для ведения домашнего виртуального холодильника.
 
@@ -64,12 +65,18 @@ export const parseFridgeInput = async (input: FridgeAiInput): Promise<ParseFridg
 Если продукт похож на существующий, верни matchedExistingFoodItemId.`;
 
   try {
-    const responseText = await callAiModel({
+    let responseText = await callAiModel({
       prompt,
       images: input.images,
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: "application/json"
     });
+
+    // Remove markdown codeblock from response text if present
+    const jsonMatch = responseText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      responseText = jsonMatch[1];
+    }
 
     const result = JSON.parse(responseText) as ParseFridgeAiResult;
     return validateParsedFridgeItems(result);
@@ -87,22 +94,25 @@ const validateParsedFridgeItems = (result: ParseFridgeAiResult): ParseFridgeAiRe
   if (!result.items) return { ...result, items: [] };
 
   const items = result.items.map(item => {
-    const warnings = [...(item.warnings || [])];
-    let needsReview = item.needsReview || false;
+    // First normalize the item to remove any nulls from AI
+    const normalized = normalizeParsedFoodDraft(item);
+    
+    const warnings = [...(normalized.warnings || [])];
+    let needsReview = normalized.needsReview || false;
 
-    if (item.kcalPer100g === null || item.kcalPer100g === undefined) {
+    if (normalized.kcalPer100g === null || normalized.kcalPer100g === undefined) {
       warnings.push("Необходимо указать калорийность");
       needsReview = true;
     }
 
-    if (item.amount === null || item.amount === undefined || !item.unit) {
+    if (normalized.amount === null || normalized.amount === undefined || !normalized.unit) {
       warnings.push("Уточните количество продукта");
       needsReview = true;
     }
 
     // Convert kg to g if amount is provided
-    let amount = item.amount;
-    let unit = item.unit;
+    let amount = normalized.amount;
+    let unit = normalized.unit;
     if (unit === 'kg' && amount !== null) {
       amount = amount * 1000;
       unit = 'g';
@@ -112,7 +122,7 @@ const validateParsedFridgeItems = (result: ParseFridgeAiResult): ParseFridgeAiRe
     }
 
     return {
-      ...item,
+      ...normalized,
       amount,
       unit,
       warnings: [...new Set(warnings)],

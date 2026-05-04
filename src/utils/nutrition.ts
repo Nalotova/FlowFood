@@ -29,7 +29,8 @@ export const calculateFoodNutrition = (item: FoodItem, amount?: number) => {
   };
 };
 
-export const formatNutritionValue = (val: number) => {
+export const formatNutritionValue = (val: number | null | undefined) => {
+  if (val === null || val === undefined) return '0';
   return val % 1 === 0 ? val.toString() : val.toFixed(1);
 };
 

@@ -73,7 +73,7 @@ export default function App() {
           <AlertCircle size={40} />
         </div>
         <div className="space-y-2">
-          <h2 className="text-xl font-serif font-bold text-stone-800">{i18n.pwa.offlineTitle}</h2>
+          <h2 className="text-xl font-serif font-bold text-stone-800">Ошибка</h2>
           <p className="text-sm text-stone-600 leading-relaxed font-bold">
             {errorMessage}
           </p>

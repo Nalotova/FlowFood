@@ -19,6 +19,7 @@ import { ParsedFoodDraftList } from '../components/fridge/ParsedFoodDraftList';
 import { ParsedFridgeItemDraft, FridgeAiInput } from '../types/fridgeAi';
 import { parseFridgeInput } from '../services/fridgeAiService';
 import { recognizeFoodFromPhotos } from '../services/photoFoodRecognitionService';
+import { normalizeParsedFoodDraft, normalizeRecognizedFoodDraft } from '../utils/normalizeFoodDraft';
 import { i18n } from '../i18n/ru';
 
 import { DiagnosticsPanel } from '../components/cooking/DiagnosticsPanel';
@@ -108,7 +109,8 @@ export const FridgePage: React.FC = () => {
 
   const handleEditDraft = (draft: ParsedFridgeItemDraft) => {
     if (!permissions.canEdit) return;
-    setEditingItem(draft);
+    // Normalize before editing to ensure no nulls in form
+    setEditingItem(normalizeParsedFoodDraft(draft));
     setEditingDraftId(draft.tempId);
     setIsFormOpen(true);
   };
@@ -116,17 +118,18 @@ export const FridgePage: React.FC = () => {
   const handlePhotoResult = (result: PhotoRecognitionResult) => {
     if (!permissions.canEdit) return;
     if (result.draft) {
-      // Pre-fill amount based on package info
-      const draft = { ...result.draft };
-      if (draft.packageAmount) {
-        draft.amount = draft.packageAmount;
-        draft.unit = draft.packageUnit || 'g';
-      } else {
-        draft.amount = 1;
-        draft.unit = 'piece';
+      // Normalize and pre-fill amount based on package info
+      const normalizedDraft = normalizeRecognizedFoodDraft(result.draft);
+      
+      if (normalizedDraft.packageAmount) {
+        normalizedDraft.amount = normalizedDraft.packageAmount;
+        normalizedDraft.unit = normalizedDraft.packageUnit || 'g';
+      } else if (!normalizedDraft.amount) {
+        normalizedDraft.amount = 1;
+        normalizedDraft.unit = 'piece';
       }
       
-      setEditingItem(draft);
+      setEditingItem(normalizedDraft);
       setIsPhotoModalOpen(false);
       setIsFormOpen(true);
     }
@@ -165,8 +168,10 @@ export const FridgePage: React.FC = () => {
   }
 
   if (isFormOpen) {
+    const itemKey = editingItem ? ('id' in editingItem ? (editingItem as FoodItem).id : (editingItem as ParsedFridgeItemDraft).tempId) : 'new';
     return (
       <FoodItemForm 
+        key={itemKey}
         initialData={editingItem}
         onSave={handleSave}
         onCancel={() => setIsFormOpen(false)}

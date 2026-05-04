@@ -176,7 +176,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await initAppData(user, true);
     } catch (err) {
       console.error("Failed to accept invite:", err);
-      setError("Ошибка при принятии приглашения");
+      // Try to extract more details about the error
+      let details = "Ошибка при принятии приглашения";
+      if (err instanceof Error) {
+        details += "\n" + err.message;
+      } else {
+        details += "\n" + String(err);
+      }
+      setError(details);
     } finally {
       setLoading(false);
     }

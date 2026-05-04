@@ -9,6 +9,7 @@ import { ChevronLeft, Save, AlertCircle, Sparkles } from 'lucide-react';
 import { RecognizedFoodDraft } from '../../types/photoRecognition';
 
 import { i18n } from '../../i18n/ru';
+import { normalizeParsedFoodDraft, normalizeRecognizedFoodDraft } from '../../utils/normalizeFoodDraft';
 
 interface FoodItemFormProps {
   initialData?: FoodItem | Partial<RecognizedFoodDraft>;
@@ -21,21 +22,52 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
   onSave, 
   onCancel 
 }) => {
-  const isDraft = (initialData as any)?.source === 'photo_ocr' || (initialData as any)?.source === 'ai_text';
+  const isDraft = (initialData as any)?.source === 'photo_ocr' || (initialData as any)?.source === 'ai_text' || (initialData as any)?.source === 'ai_text_photo';
   
-  const [formData, setFormData] = useState<Partial<FoodItem>>(initialData as any || {
-    name: '',
-    brand: '',
-    amount: 1,
-    unit: 'g',
-    kcalPer100g: 0,
-    proteinPer100g: 0,
-    fatPer100g: 0,
-    carbsPer100g: 0,
-    categories: ['other'],
-    state: 'raw',
-    source: 'manual',
-    notes: '',
+  const [formData, setFormData] = useState<Partial<FoodItem>>(() => {
+    // DIAGNOSTICS: log incoming data
+    console.log('[FoodItemForm] initialData:', initialData);
+
+    let finalData: Partial<FoodItem>;
+    if (!initialData) {
+      finalData = {
+        name: '',
+        brand: '',
+        amount: 1,
+        unit: 'g',
+        kcalPer100g: 0,
+        proteinPer100g: 0,
+        fatPer100g: 0,
+        carbsPer100g: 0,
+        categories: ['other'],
+        state: 'ready',
+        source: 'manual',
+        notes: '',
+      };
+    } else if ((initialData as any).source === 'ai_text' || (initialData as any).source === 'ai_text_photo') {
+      finalData = normalizeParsedFoodDraft(initialData);
+    } else if ((initialData as any).source === 'photo_ocr') {
+      finalData = normalizeRecognizedFoodDraft(initialData);
+    } else {
+      finalData = {
+        ...initialData,
+        name: initialData.name ?? "",
+        brand: (initialData as any).brand ?? "",
+        amount: (initialData as any).amount ?? 0,
+        unit: (initialData as any).unit ?? "g",
+        categories: (initialData as any).categories ?? ["other"],
+        state: (initialData as any).state ?? "ready",
+        source: (initialData as any).source ?? "manual",
+      } as Partial<FoodItem>;
+    }
+
+    // DIAGNOSTICS: log normalized data
+    console.log('[FoodItemForm] initialized formData:', finalData);
+    console.log('[FoodItemForm] unit select value:', finalData.unit);
+    if (finalData.unit === null) console.warn('[FoodItemForm] unit is NULL!');
+    if (finalData.state === null) console.warn('[FoodItemForm] state is NULL!');
+
+    return finalData;
   });
 
   const categories: FoodCategory[] = [
@@ -154,7 +186,7 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
               <div>
                 <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 px-1">Ед. изм.</label>
                 <select
-                  value={formData.unit}
+                  value={formData.unit || ''}
                   onChange={(e) => setFormData({ ...formData, unit: e.target.value as FoodUnit })}
                   className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-bold focus:ring-2 focus:ring-natural-primary/20 transition-all outline-none appearance-none"
                 >

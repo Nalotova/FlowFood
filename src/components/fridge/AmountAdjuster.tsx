@@ -20,7 +20,7 @@ export const AmountAdjuster: React.FC<AmountAdjusterProps> = ({
   onSet 
 }) => {
   const handleSetExact = () => {
-    const val = prompt(`Введите точный остаток (${unit}):`, amount.toString());
+    const val = prompt(`Введите точный остаток (${unit}):`, (amount ?? 0).toString());
     if (val !== null) {
       const num = parseFloat(val);
       if (!isNaN(num) && num >= 0) {

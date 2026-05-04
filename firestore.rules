@@ -31,7 +31,16 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.ownerUserId ||
-        request.auth.uid in resource.data.get('memberUserIds', [])
+        request.auth.uid in resource.data.get('memberUserIds', []) ||
+        (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'memberUserIds', 'lastAcceptedInviteId', 'updatedAt']) &&
+          request.auth.uid in request.resource.data.memberUserIds &&
+          !(request.auth.uid in resource.data.get('memberUserIds', [])) &&
+          'lastAcceptedInviteId' in request.resource.data &&
+          getAfter(/databases/$(database)/documents/householdInvites/$(request.resource.data.lastAcceptedInviteId)).data.householdId == householdId &&
+          getAfter(/databases/$(database)/documents/householdInvites/$(request.resource.data.lastAcceptedInviteId)).data.invitedEmail == request.auth.token.email.lower() &&
+          getAfter(/databases/$(database)/documents/householdInvites/$(request.resource.data.lastAcceptedInviteId)).data.status == 'accepted'
+        )
       );
 
       // Profiles subcollection

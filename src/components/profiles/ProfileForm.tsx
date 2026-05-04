@@ -20,23 +20,39 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   onSave, 
   onCancel 
 }) => {
-  const [formData, setFormData] = useState<Partial<UserProfile>>(initialData || {
-    id: crypto.randomUUID(),
-    name: '',
-    isActive: true,
-    role: 'adult',
-    gender: 'not_specified',
-    portionMultiplier: 1.0,
-    proteinSettings: { mode: 'not_tracked' },
-    mealDistribution: { breakfast: 0, lunch: 0, snack: 0, dinner: 0 },
-    preferences: [],
-    likedFoods: [],
-    dislikedFoods: [],
-    forbiddenFoods: [],
-    allergies: [],
-    usuallyEatsTogether: true,
-    allowSameDishDifferentPortion: true,
-    allowSeparateDish: false,
+  const [formData, setFormData] = useState<Partial<UserProfile>>(() => {
+    // DIAGNOSTICS
+    console.log('[ProfileForm] initialData:', initialData);
+
+    const data = initialData || {
+      id: crypto.randomUUID(),
+      name: '',
+      isActive: true,
+      role: 'adult',
+      gender: 'not_specified',
+      portionMultiplier: 1.0,
+      proteinSettings: { mode: 'not_tracked' },
+      mealDistribution: { breakfast: 0, lunch: 0, snack: 0, dinner: 0 },
+      preferences: [],
+      likedFoods: [],
+      dislikedFoods: [],
+      forbiddenFoods: [],
+      allergies: [],
+      usuallyEatsTogether: true,
+      allowSameDishDifferentPortion: true,
+      allowSeparateDish: false,
+    };
+
+    return {
+      ...data,
+      name: data.name ?? '',
+      gender: data.gender ?? 'not_specified',
+      role: data.role ?? 'adult',
+      proteinSettings: {
+        ...(data.proteinSettings || { mode: 'not_tracked' }),
+        mode: data.proteinSettings?.mode ?? 'not_tracked'
+      }
+    };
   });
 
   const [validationWarning, setValidationWarning] = useState<string | null>(null);
@@ -145,7 +161,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-stone-600 px-2 italic">Роль</label>
                 <select
-                  value={formData.role}
+                  value={formData.role || 'adult'}
                   onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
                   className="w-full bg-natural-muted border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
                 >
