@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { useAppUI } from '../contexts/AppUIContext';
 import { LogOut, CloudUpload, User, ShieldCheck, CheckCircle2, AlertCircle, Loader2, UserPlus, Users, Trash2, Shield, Settings2, Home, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { i18n } from '../i18n/ru';
@@ -22,6 +23,7 @@ import { HouseholdManager } from '../components/settings/HouseholdManager';
 
 export const SettingsPage: React.FC = () => {
   const { user, signOut, activeHousehold, userAppProfile, permissions, refreshData, switchHousehold } = useApp();
+  const { showToast } = useAppUI();
   const [migrating, setMigrating] = useState(false);
   const [hasLocalData, setHasLocalData] = useState(false);
   const [customApiKey, setCustomApiKey] = useState(localStorage.getItem('custom_gemini_api_key') || '');
@@ -87,10 +89,10 @@ export const SettingsPage: React.FC = () => {
       localStorage.setItem('fvf_migrated', 'true');
       setHasLocalData(false);
       await refreshData();
-      alert('Миграция успешно завершена!');
+      showToast('Миграция успешно завершена!', 'success');
     } catch (err) {
       console.error("Migration failed:", err);
-      alert('Ошибка при миграции');
+      showToast('Ошибка при миграции', 'error');
     } finally {
       setMigrating(false);
     }

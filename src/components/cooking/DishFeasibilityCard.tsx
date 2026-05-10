@@ -7,6 +7,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle2, AlertCircle, ShoppingCart, Info, Copy, X } from 'lucide-react';
 import { DishFeasibility } from '../../types/dishPlanning';
+import { useAppUI } from '../../contexts/AppUIContext';
 import { i18n } from '../../i18n/ru';
 
 interface DishFeasibilityCardProps {
@@ -24,6 +25,7 @@ export const DishFeasibilityCard: React.FC<DishFeasibilityCardProps> = ({
   onCancel,
   onSuggestAlternative
 }) => {
+  const { showToast } = useAppUI();
   const isCanMake = feasibility.status === 'can_make';
   const isModified = feasibility.status === 'can_make_modified';
   const isNeedsShopping = feasibility.status === 'needs_shopping';
@@ -34,7 +36,7 @@ export const DishFeasibilityCard: React.FC<DishFeasibilityCardProps> = ({
       .map(item => `- ${item.name}${item.amount ? ` ${item.amount}${item.unit || ''}` : ''}`)
       .join('\n');
     navigator.clipboard.writeText(list);
-    alert(i18n.cooking.shoppingListCopied);
+    showToast(i18n.cooking.shoppingListCopied, 'success');
   };
 
   return (
@@ -57,7 +59,7 @@ export const DishFeasibilityCard: React.FC<DishFeasibilityCardProps> = ({
 
       <div className={`p-4 rounded-2xl flex items-start space-x-3 ${
         isCanMake ? 'bg-green-50 text-green-700' :
-        isModified ? 'bg-blue-50 text-blue-700' :
+        isModified ? 'bg-natural-primary/5 text-natural-primary' :
         isNeedsShopping ? 'bg-amber-50 text-amber-700' :
         'bg-red-50 text-red-700'
       }`}>
@@ -117,16 +119,16 @@ export const DishFeasibilityCard: React.FC<DishFeasibilityCardProps> = ({
         {feasibility.suggestedSubstitutions.length > 0 && (
           <div className="space-y-2">
             <h4 className="text-[9px] font-black text-stone-400 uppercase tracking-widest flex items-center gap-1">
-              <Info size={10} className="text-blue-500" />
+              <Info size={10} className="text-natural-primary" />
               {i18n.cooking.substitutions}
             </h4>
             <div className="space-y-1.5">
               {feasibility.suggestedSubstitutions.map((sub, i) => (
-                <div key={i} className="flex items-center justify-between p-2 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                <div key={i} className="flex items-center justify-between p-2 bg-stone-50 rounded-xl border border-stone-100">
                   <span className="text-[10px] font-bold text-stone-600">
-                    {sub.requiredIngredient.name} → <span className="text-blue-700">{sub.substituteFoodName}</span>
+                    {sub.requiredIngredient.name} → <span className="text-natural-primary">{sub.substituteFoodName}</span>
                   </span>
-                  <span className="text-[8px] font-black text-blue-500 uppercase italic">Замена</span>
+                  <span className="text-[8px] font-black text-natural-primary uppercase italic">Замена</span>
                 </div>
               ))}
             </div>

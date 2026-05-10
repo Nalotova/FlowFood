@@ -7,12 +7,14 @@ import React, { useState } from 'react';
 import { Users, Mail, Shield, UserPlus, X, Trash2, CheckCircle2, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../../contexts/AppContext';
+import { useAppUI } from '../../contexts/AppUIContext';
 import { i18n } from '../../i18n/ru';
 import { householdService } from '../../services/householdService';
 import { HouseholdRole } from '../../types/household';
 
 export const HouseholdManager: React.FC = () => {
   const { user, activeHousehold, userRole, permissions, refreshData } = useApp();
+  const { showConfirm, showToast } = useAppUI();
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -33,12 +35,15 @@ export const HouseholdManager: React.FC = () => {
   };
 
   const handleRemoveMember = async (memberUserId: string) => {
-    if (!activeHousehold || !confirm('Вы уверены, что хотите удалить этого участника?')) return;
+    if (!activeHousehold) return;
+    const isConfirmed = await showConfirm('Вы уверены, что хотите удалить этого участника?', 'Подтверждение', 'danger');
+    if (!isConfirmed) return;
+    
     try {
       await householdService.removeMemberFromHousehold(activeHousehold.id, memberUserId);
       await refreshData();
     } catch (err: any) {
-      alert(err.message || i18n.common.error);
+      showToast(err.message || i18n.common.error, 'error');
     }
   };
 
@@ -64,7 +69,7 @@ export const HouseholdManager: React.FC = () => {
         setSuccessMessage(null);
       }, 3000);
     } catch (err: any) {
-      alert(err.message || i18n.common.error);
+      showToast(err.message || i18n.common.error, 'error');
     } finally {
       setIsSending(false);
     }

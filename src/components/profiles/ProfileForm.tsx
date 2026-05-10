@@ -4,9 +4,11 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { UserProfile, UserRole, Gender, MealDistribution } from '../../types/profile';
+import { UserProfile, UserRole, Gender, MealDistribution, DataSource } from '../../types/profile';
 import { ChevronLeft, Save, Info, AlertTriangle } from 'lucide-react';
 import { useApp } from '../../contexts/AppContext';
+import { useAppUI } from '../../contexts/AppUIContext';
+import { AppSelect } from '../ui/AppSelect';
 
 import { i18n } from '../../i18n/ru';
 
@@ -22,6 +24,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   onCancel 
 }) => {
   const { setNavbarHidden } = useApp();
+  const { showToast } = useAppUI();
 
   useEffect(() => {
     setNavbarHidden(true);
@@ -38,6 +41,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       isActive: true,
       role: 'adult',
       gender: 'not_specified',
+      dataSource: 'Local Storage',
       portionMultiplier: 1.0,
       proteinSettings: { mode: 'not_tracked' },
       mealDistribution: { breakfast: 0, lunch: 0, snack: 0, dinner: 0 },
@@ -56,6 +60,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       name: data.name ?? '',
       gender: data.gender ?? 'not_specified',
       role: data.role ?? 'adult',
+      dataSource: data.dataSource ?? 'Local Storage',
       proteinSettings: {
         ...(data.proteinSettings || { mode: 'not_tracked' }),
         mode: data.proteinSettings?.mode ?? 'not_tracked'
@@ -80,21 +85,21 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return alert(i18n.validation.nameRequired);
-    if (formData.dailyKcal && formData.dailyKcal <= 0) return alert(i18n.validation.kcalRequired);
-    if (formData.portionMultiplier && formData.portionMultiplier <= 0) return alert(i18n.validation.multiplierRequired);
+    if (!formData.name) return showToast(i18n.validation.nameRequired, 'warning');
+    if (formData.dailyKcal && formData.dailyKcal <= 0) return showToast(i18n.validation.kcalRequired, 'warning');
+    if (formData.portionMultiplier && formData.portionMultiplier <= 0) return showToast(i18n.validation.multiplierRequired, 'warning');
 
     // Protein validation
     if (formData.proteinSettings?.mode === 'manual') {
       if (!formData.proteinSettings.proteinTargetGrams || formData.proteinSettings.proteinTargetGrams <= 0) {
-        return alert(i18n.validation.proteinManualRequired);
+        return showToast(i18n.validation.proteinManualRequired, 'warning');
       }
     } else if (formData.proteinSettings?.mode === 'auto') {
       if (!formData.proteinSettings.bodyWeightKg || formData.proteinSettings.bodyWeightKg <= 0) {
-        return alert(i18n.validation.weightRequired);
+        return showToast(i18n.validation.weightRequired, 'warning');
       }
       if (!formData.proteinSettings.proteinPerKg || formData.proteinSettings.proteinPerKg <= 0) {
-        return alert(i18n.validation.proteinPerKgRequired);
+        return showToast(i18n.validation.proteinPerKgRequired, 'warning');
       }
     }
 
@@ -157,27 +162,31 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-600 px-2 italic">Пол</label>
-                  <select
+                  <AppSelect
                     value={formData.gender || 'not_specified'}
                     onChange={e => setFormData({ ...formData, gender: e.target.value as Gender })}
-                    className="w-full bg-natural-muted border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                  >
-                    {Object.entries(i18n.profiles.genders).map(([key, val]) => (
-                      <option key={key} value={key}>{val}</option>
-                    ))}
-                  </select>
+                    options={Object.entries(i18n.profiles.genders).map(([key, val]) => ({ value: key, label: val }))}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-stone-600 px-2 italic">Источник данных</label>
+                  <AppSelect
+                    value={formData.dataSource || 'Local Storage'}
+                    onChange={e => setFormData({ ...formData, dataSource: e.target.value as DataSource })}
+                    options={[
+                      { value: 'Firebase', label: 'Firebase' },
+                      { value: 'Local Storage', label: 'Local Storage' },
+                      { value: 'API', label: 'API' }
+                    ]}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-stone-600 px-2 italic">Роль</label>
-                  <select
+                  <AppSelect
                     value={formData.role || 'adult'}
                     onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
-                    className="w-full bg-natural-muted border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                  >
-                    {Object.entries(i18n.profiles.roles).map(([key, val]) => (
-                      <option key={key} value={key}>{val}</option>
-                    ))}
-                  </select>
+                    options={Object.entries(i18n.profiles.roles).map(([key, val]) => ({ value: key, label: val }))}
+                  />
                 </div>
               </div>
             </div>
@@ -189,18 +198,19 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             <div className="bg-stone-50 p-5 rounded-[32px] border border-stone-100 space-y-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-stone-600 px-2 italic">Режим отслеживания белка</label>
-                <select
+                <AppSelect
                   value={formData.proteinSettings?.mode || 'not_tracked'}
                   onChange={e => setFormData({
                     ...formData,
                     proteinSettings: { ...formData.proteinSettings, mode: e.target.value as any }
                   })}
-                  className="w-full bg-white border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                >
-                  <option value="not_tracked">Не отслеживать</option>
-                  <option value="manual">Задать вручную</option>
-                  <option value="auto">Рассчитать по весу</option>
-                </select>
+                  options={[
+                    { value: 'not_tracked', label: 'Не отслеживать' },
+                    { value: 'manual', label: 'Задать вручную' },
+                    { value: 'auto', label: 'Рассчитать по весу' }
+                  ]}
+                  className="bg-white"
+                />
                 <p className="text-[10px] text-stone-400 px-2 leading-tight">
                   {formData.proteinSettings?.mode === 'not_tracked' 
                     ? 'Для детей/гостей можно выбрать "Не отслеживать".'
@@ -281,7 +291,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
               {/* Protein */}
               <div className="space-y-4">
                 <label className="text-xs font-bold text-stone-600 px-2 italic">Белок</label>
-                <select
+                <AppSelect
                   value={formData.nutritionTargets?.proteinMode || (formData.proteinSettings?.mode === 'auto' ? 'per_kg' : formData.proteinSettings?.mode === 'manual' ? 'manual' : 'not_tracked')}
                   onChange={e => {
                     const mode = e.target.value as any;
@@ -296,12 +306,13 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                       }
                     });
                   }}
-                  className="w-full bg-white border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                >
-                  <option value="not_tracked">Не отслеживать</option>
-                  <option value="manual">Задать вручную (г/день)</option>
-                  <option value="per_kg">Рассчитать по весу (г/кг)</option>
-                </select>
+                  options={[
+                    { value: 'not_tracked', label: 'Не отслеживать' },
+                    { value: 'manual', label: 'Задать вручную (г/день)' },
+                    { value: 'per_kg', label: 'Рассчитать по весу (г/кг)' }
+                  ]}
+                  className="bg-white"
+                />
 
                 {formData.nutritionTargets?.proteinMode === 'manual' && (
                   <input
@@ -346,19 +357,20 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
               {/* Fats */}
               <div className="space-y-4 pt-4 border-t border-stone-100">
                 <label className="text-xs font-bold text-stone-600 px-2 italic">Жиры</label>
-                <select
+                <AppSelect
                   value={formData.nutritionTargets?.fatMode || 'not_tracked'}
                   onChange={e => setFormData({
                     ...formData,
                     nutritionTargets: { ...(formData.nutritionTargets || {}), proteinMode: formData.nutritionTargets?.proteinMode || 'not_tracked', fatMode: e.target.value as any }
                   })}
-                  className="w-full bg-white border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                >
-                  <option value="not_tracked">Не отслеживать</option>
-                  <option value="manual">Задать вручную (г/день)</option>
-                  <option value="range">Диапазон (г/день)</option>
-                  <option value="percent">% от калорий</option>
-                </select>
+                  options={[
+                    { value: 'not_tracked', label: 'Не отслеживать' },
+                    { value: 'manual', label: 'Задать вручную (г/день)' },
+                    { value: 'range', label: 'Диапазон (г/день)' },
+                    { value: 'percent', label: '% от калорий' }
+                  ]}
+                  className="bg-white"
+                />
 
                 {formData.nutritionTargets?.fatMode === 'manual' && (
                   <input
@@ -415,19 +427,20 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
               {/* Carbs */}
               <div className="space-y-4 pt-4 border-t border-stone-100">
                 <label className="text-xs font-bold text-stone-600 px-2 italic">Углеводы</label>
-                <select
+                <AppSelect
                   value={formData.nutritionTargets?.carbMode || 'not_tracked'}
                   onChange={e => setFormData({
                     ...formData,
                     nutritionTargets: { ...(formData.nutritionTargets || {}), proteinMode: formData.nutritionTargets?.proteinMode || 'not_tracked', fatMode: formData.nutritionTargets?.fatMode || 'not_tracked', carbMode: e.target.value as any }
                   })}
-                  className="w-full bg-white border border-stone-100 rounded-2xl p-4 text-xs font-medium focus:ring-2 focus:ring-natural-primary/10 outline-none appearance-none"
-                >
-                  <option value="not_tracked">Не отслеживать</option>
-                  <option value="manual">Задать вручную (г/день)</option>
-                  <option value="range">Диапазон (г/день)</option>
-                  <option value="remaining">Остаток от калорий</option>
-                </select>
+                  options={[
+                    { value: 'not_tracked', label: 'Не отслеживать' },
+                    { value: 'manual', label: 'Задать вручную (г/день)' },
+                    { value: 'range', label: 'Диапазон (г/день)' },
+                    { value: 'remaining', label: 'Остаток от калорий' }
+                  ]}
+                  className="bg-white"
+                />
 
                 {formData.nutritionTargets?.carbMode === 'manual' && (
                   <input

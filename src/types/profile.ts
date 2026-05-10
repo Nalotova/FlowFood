@@ -8,6 +8,7 @@ import { MealType, CookingResult } from './cooking';
 export type UserRole = "adult" | "teen" | "child" | "guest" | "other";
 export type Gender = "female" | "male" | "other" | "not_specified";
 export type MealSize = "small" | "normal" | "large";
+export type DataSource = 'Firebase' | 'Local Storage' | 'API';
 
 export interface HistoryItem {
   id: string;
@@ -46,6 +47,7 @@ export interface UserProfile {
   gender?: Gender;
   role?: UserRole;
   isActive: boolean;
+  dataSource: DataSource;
 
   // Nutrition settings
   dailyKcal?: number;

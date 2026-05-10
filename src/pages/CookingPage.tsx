@@ -9,6 +9,7 @@ import { ChefHat, Wand2, ArrowLeft, CheckCircle2, RotateCcw, Edit3, Apple, Plus,
 import { useProfiles } from '../hooks/useProfiles';
 import { useFridge } from '../hooks/useFridge';
 import { useApp } from '../contexts/AppContext';
+import { useAppUI } from '../contexts/AppUIContext';
 import { MealType, CookingMode, CookingResult, TargetStrategy, GenerationMode } from '../types/cooking';
 import { cookingService } from '../services/cookingService';
 import { aiCookingService } from '../services/aiCookingService';
@@ -48,6 +49,7 @@ export const CookingPage: React.FC = () => {
   const { profiles, addProfile, loading: profilesLoading } = useProfiles();
   const { items, setAmount, addFoodItem, loading: fridgeLoading } = useFridge();
   const { addEntry, entries, deleteEntry, getSummary, loading: logLoading } = useFoodLog();
+  const { showConfirm, showAlert, showToast } = useAppUI();
 
   const isInitialLoading = profilesLoading || fridgeLoading || logLoading;
 
@@ -81,7 +83,7 @@ export const CookingPage: React.FC = () => {
   const isDev = import.meta.env.DEV; 
 
   const addTestData = async () => {
-    if (!confirm('Добавить тестовые данные?')) return;
+    if (!await showConfirm('Добавить тестовые данные?', 'Тестовые данные', 'info')) return;
     
     // Add Test Profiles if not exist
     const testProfiles = [
@@ -110,7 +112,7 @@ export const CookingPage: React.FC = () => {
       }
     }
     
-    alert('Тестовые данные добавлены!');
+    showToast('Тестовые данные добавлены!', 'success');
   };
 
   // Calculate summaries for selected participants locally from entries
@@ -145,8 +147,14 @@ export const CookingPage: React.FC = () => {
   }, [participantIds, entries, profiles]);
 
   const handleGenerate = async (bypassFeasibility = false) => {
-    if (participantIds.length === 0) return alert('Выберите хотя бы одного участника');
-    if (items.filter(i => i.amount > 0).length === 0) return alert(i18n.fridge.noProducts);
+    if (participantIds.length === 0) {
+      showToast('Выберите хотя бы одного участника', 'warning');
+      return;
+    }
+    if (items.filter(i => i.amount > 0).length === 0) {
+      showToast(i18n.fridge.noProducts, 'warning');
+      return;
+    }
 
     // Initial identification of dish feasibility if a specific dish is requested
     if (requestedDishName.trim() && !feasibility && !bypassFeasibility) {
@@ -322,9 +330,9 @@ export const CookingPage: React.FC = () => {
 
       setIsAccepted(true);
       setShowValidationModal(false);
-      alert(i18n.cooking.accepted);
+      showToast(i18n.cooking.accepted, 'success');
     } catch (err) {
-      alert(i18n.common.error);
+      showToast(i18n.common.error, 'error');
     }
   };
 
@@ -392,13 +400,13 @@ export const CookingPage: React.FC = () => {
     }
   };
 
-  const handleAcceptRevision = () => {
+  const handleAcceptRevision = async () => {
     if (!pendingRevision) return;
     
     // Validate proposed result
     const report = validateCookingResult(pendingRevision.proposedResult, items, profiles);
     if (!report.isValid) {
-      alert(`Новый вариант содержит ошибки: ${report.generalWarnings.join(', ')}`);
+      await showAlert(`Новый вариант содержит ошибки: ${report.generalWarnings.join(', ')}`, 'Внимание', 'warning');
       return;
     }
 
@@ -654,8 +662,14 @@ export const CookingPage: React.FC = () => {
                   <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto no-scrollbar">
                     <DishFeasibilityCard 
                       feasibility={feasibility}
-                      onCookAnyway={() => handleGenerate(true)}
-                      onCookWithSubstitutes={() => handleGenerate(true)}
+                      onCookAnyway={() => {
+                        setFeasibility(null);
+                        handleGenerate(true);
+                      }}
+                      onCookWithSubstitutes={() => {
+                        setFeasibility(null);
+                        handleGenerate(true);
+                      }}
                       onCancel={() => setFeasibility(null)}
                       onSuggestAlternative={() => {
                         setRequestedDishName('');

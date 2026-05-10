@@ -16,6 +16,7 @@ import { cookingHistoryService } from '../services/cookingHistoryService';
 import { estimateFoodFromPhotos, FoodEstimationResult } from '../services/photoFoodEstimationService';
 import { RecipeDetailModal } from '../components/cooking/RecipeDetailModal';
 import { useApp } from '../contexts/AppContext';
+import { useAppUI } from '../contexts/AppUIContext';
 import { CookingResult } from '../types/cooking';
 import { DailyNutritionDashboard } from '../components/foodLog/DailyNutritionDashboard';
 import { DailyAiNutritionCoach } from '../components/foodLog/DailyAiNutritionCoach';
@@ -27,6 +28,7 @@ export interface HistoryPageProps {
 
 export const HistoryPage: React.FC<HistoryPageProps> = ({ onSelectCooking }) => {
   const { activeHousehold, permissions, userRole } = useApp();
+  const { showConfirm } = useAppUI();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | 'all'>('all');
   
@@ -220,7 +222,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onSelectCooking }) => 
                 <div className="space-y-3">
                   <h3 className="font-serif font-black text-stone-800 text-2xl tracking-tight">Сегодня чистый лист</h3>
                   <p className="text-xs text-stone-500 leading-relaxed max-w-[240px] mx-auto">
-                    Добавь первый приём пищи, и я покажу, как закрываются калории, белки, жиры и углеводы.
+                    Вы можете запланировать меню на день или просто съесть что-то вкусное.
                   </p>
                 </div>
 
@@ -249,7 +251,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onSelectCooking }) => 
                     onClick={onSelectCooking}
                     className="w-full bg-stone-50 text-stone-500 py-4 rounded-[20px] text-xs font-black uppercase tracking-widest hover:bg-stone-100 active:scale-95 transition-all"
                   >
-                    Что приготовить?
+                    Сгенерировать меню
                   </button>
                 </div>
               </motion.div>
@@ -307,7 +309,7 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({ onSelectCooking }) => 
                       <button 
                         onClick={async (e) => {
                           e.stopPropagation();
-                          if (window.confirm(`${i18n.common.delete}?`)) {
+                          if (await showConfirm(`${i18n.common.delete}?`, 'Удаление', 'danger')) {
                             await cookingHistoryService.deleteResult(res.id, householdId);
                             fetchCookingHistory();
                           }

@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { AppProvider } from './contexts/AppContext';
+import { AppUIProvider } from './contexts/AppUIContext';
 
 const originalConsoleError = console.error;
 console.error = (...args) => {
@@ -19,8 +20,10 @@ console.log('MAIN TSX EXECUTING - DEBUG 2026-05-03');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppProvider>
-      <App />
-    </AppProvider>
+    <AppUIProvider>
+      <AppProvider>
+        <App />
+      </AppProvider>
+    </AppUIProvider>
   </StrictMode>,
 );

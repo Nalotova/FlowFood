@@ -8,6 +8,8 @@ import { FoodItem, FoodUnit, FoodCategory, FoodState, FoodSource } from '../../t
 import { ChevronLeft, Save, AlertCircle, Sparkles } from 'lucide-react';
 import { RecognizedFoodDraft } from '../../types/photoRecognition';
 import { useApp } from '../../contexts/AppContext';
+import { useAppUI } from '../../contexts/AppUIContext';
+import { AppSelect } from '../ui/AppSelect';
 
 import { i18n } from '../../i18n/ru';
 import { normalizeParsedFoodDraft, normalizeRecognizedFoodDraft } from '../../utils/normalizeFoodDraft';
@@ -24,6 +26,7 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
   onCancel 
 }) => {
   const { setNavbarHidden } = useApp();
+  const { showConfirm, showToast } = useAppUI();
   const isDraft = (initialData as any)?.source === 'photo_ocr' || (initialData as any)?.source === 'ai_text' || (initialData as any)?.source === 'ai_text_photo';
   
   useEffect(() => {
@@ -81,20 +84,20 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
     "protein", "carb", "fat", "vegetable", "fruit", "dairy", "fish", "meat", "egg", "grain", "ready_meal", "other"
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return alert(i18n.validation.foodNameRequired);
-    if (formData.amount === undefined || formData.amount < 0) return alert(i18n.validation.amountRequired);
+    if (!formData.name) return showToast(i18n.validation.foodNameRequired, 'warning');
+    if (formData.amount === undefined || formData.amount < 0) return showToast(i18n.validation.amountRequired, 'warning');
     if ((formData.unit === 'piece' || formData.unit === 'package') && (!formData.gramsPerUnit || formData.gramsPerUnit <= 0)) {
-       return alert(i18n.validation.unitWeightRequired);
+       return showToast(i18n.validation.unitWeightRequired, 'warning');
     }
 
     if (formData.kcalPer100g === undefined || formData.proteinPer100g === undefined || formData.fatPer100g === undefined || formData.carbsPer100g === undefined) {
-      return alert(i18n.fridge.checkData);
+      return showToast(i18n.fridge.checkData, 'warning');
     }
 
     if (isDraft && (formData.confidenceScore || 0) < 0.7) {
-      if (!confirm(i18n.fridge.lowConfidence)) return;
+      if (!await showConfirm(i18n.fridge.lowConfidence, 'Внимание', 'warning')) return;
     }
 
     onSave(formData as Omit<FoodItem, "id" | "createdAt" | "updatedAt">);
@@ -193,15 +196,11 @@ export const FoodItemForm: React.FC<FoodItemFormProps> = ({
                 </div>
                 <div>
                   <label className="block text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2 px-1">Ед. изм.</label>
-                  <select
+                  <AppSelect
                     value={formData.unit || ''}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value as FoodUnit })}
-                    className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-bold focus:ring-2 focus:ring-natural-primary/20 transition-all outline-none appearance-none"
-                  >
-                    {Object.entries(i18n.fridge.units).map(([key, val]) => (
-                      <option key={key} value={key}>{val}</option>
-                    ))}
-                  </select>
+                    options={Object.entries(i18n.fridge.units).map(([key, val]) => ({ value: key, label: val }))}
+                  />
                 </div>
               </div>
 

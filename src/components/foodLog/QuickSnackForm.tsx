@@ -10,6 +10,8 @@ import { Check, ChevronRight, X, Info, Sparkles, Loader2, Trash2, AlertCircle, E
 import { estimateFoodFromText, TextFoodEstimationResult, TextFoodEstimationItem } from '../../services/foodTextEstimationService';
 import { estimateFoodFromPhotos, FoodEstimationResult } from '../../services/photoFoodEstimationService';
 import { compressImages, CompressedImage } from '../../utils/imageCompression';
+import { useAppUI } from '../../contexts/AppUIContext';
+import { AppSelect } from '../ui/AppSelect';
 
 import { i18n } from '../../i18n/ru';
 
@@ -35,6 +37,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
   onCancel,
   initialData
 }) => {
+  const { showToast } = useAppUI();
   const activeProfiles = profiles.filter(p => p.isActive);
   const availableFood = foodItems.filter(f => f.amount > 0);
 
@@ -92,7 +95,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
       setEstimationResult(result);
     } catch (error) {
       console.error(error);
-      alert('Ошибка при разборе текста');
+      showToast('Ошибка при разборе текста', 'error');
     } finally {
       setIsEstimating(false);
     }
@@ -233,11 +236,11 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileId) return alert('Выберите участника');
+    if (!profileId) return showToast('Выберите участника', 'warning');
     if (!selectedProfile) return;
 
     if (mode === 'text') {
-      if (!estimationResult || estimationResult.items.length === 0) return alert('Сначала рассчитайте состав еды');
+      if (!estimationResult || estimationResult.items.length === 0) return showToast('Сначала рассчитайте состав еды', 'warning');
       
       const ingredientsList = estimationResult.items.map(i => 
         `- ${i.name}: ${i.amount} ${i.unit}, ~${i.estimatedGrams}г, ${i.kcal} ккал (Б:${i.protein} Ж:${i.fat} У:${i.carbs})`
@@ -265,8 +268,8 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
     }
 
     if (mode === 'photo') {
-      if (!photoResult) return alert('Сначала рассчитайте состав еды по фото');
-      if (!manualName) return alert('Укажите название еды');
+      if (!photoResult) return showToast('Сначала рассчитайте состав еды по фото', 'warning');
+      if (!manualName) return showToast('Укажите название еды', 'warning');
 
       await onSave({
         profileId,
@@ -288,7 +291,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
     }
 
     if (mode === 'manual') {
-      if (!manualName) return alert('Укажите название еды');
+      if (!manualName) return showToast('Укажите название еды', 'warning');
       await onSave({
         profileId,
         profileName: selectedProfile.name,
@@ -309,10 +312,10 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
     }
 
     if (mode === 'fridge') {
-      if (!foodId) return alert('Выберите продукт');
-      if (!amount || amount <= 0) return alert('Укажите количество');
+      if (!foodId) return showToast('Выберите продукт', 'warning');
+      if (!amount || amount <= 0) return showToast('Укажите количество', 'warning');
       if (selectedFood && amount > selectedFood.amount) {
-        return alert(`${i18n.validation.deficitWarning}. В холодильнике всего ${selectedFood.amount} ${selectedFood.unit}`);
+        return showToast(`${i18n.validation.deficitWarning}. В холодильнике всего ${selectedFood.amount} ${selectedFood.unit}`, 'warning');
       }
 
       if (selectedFood) {
@@ -676,16 +679,15 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
             <div className="space-y-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.foodLog.whatAte}</label>
-                <select
+                <AppSelect
                   value={foodId || ''}
                   onChange={(e) => setFoodId(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-100 rounded-2xl p-4 text-xs font-medium outline-none appearance-none"
-                >
-                  <option value="">Выберите продукт из холодильника...</option>
-                  {availableFood.map(f => (
-                    <option key={f.id} value={f.id}>{f.name} ({f.amount} {f.unit})</option>
-                  ))}
-                </select>
+                  options={[
+                    { value: '', label: 'Выберите продукт из холодильника...' },
+                    ...availableFood.map(f => ({ value: f.id, label: `${f.name} (${f.amount} ${f.unit})` }))
+                  ]}
+                  className="bg-stone-50"
+                />
               </div>
 
               {selectedFood && (

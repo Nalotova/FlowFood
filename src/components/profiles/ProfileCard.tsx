@@ -8,6 +8,7 @@ import { UserProfile } from '../../types/profile';
 import { Settings2, Trash2, Power, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { formatProteinTarget } from '../../utils/nutrition';
+import { useAppUI } from '../../contexts/AppUIContext';
 
 import { i18n } from '../../i18n/ru';
 
@@ -24,6 +25,7 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   onDelete, 
   onToggleActive 
 }) => {
+  const { showConfirm } = useAppUI();
   const sumMealKcal = (profile.mealDistribution.breakfast || 0) + 
                      (profile.mealDistribution.lunch || 0) + 
                      (profile.mealDistribution.snack || 0) + 
@@ -85,8 +87,8 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
           )}
           {typeof onDelete === 'function' && (
             <button 
-              onClick={() => {
-                if (window.confirm(`${i18n.common.delete} ${profile.name}?`)) onDelete(profile.id);
+              onClick={async () => {
+                if (await showConfirm(`${i18n.common.delete} ${profile.name}?`, 'Удаление', 'danger')) onDelete(profile.id);
               }}
               className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
             >

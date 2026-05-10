@@ -1,31 +1,31 @@
 {
-  "name": "FlowFood — дневник питания и ИИ-повар",
+  "name": "FlowFood",
   "short_name": "FlowFood",
   "description": "Эстетичный трекер питания, холодильника и рецептов для всей семьи.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F2ED",
-  "theme_color": "#5A5A40",
+  "background_color": "#FCFBF8",
+  "theme_color": "#7A8B73",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/logo.svg",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/logo.svg",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/apple-touch-icon.png",
+      "src": "/logo.svg",
       "sizes": "180x180",
-      "type": "image/png"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/maskable-icon-512.png",
+      "src": "/logo.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "maskable"
     }
   ]

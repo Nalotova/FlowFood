@@ -26,6 +26,7 @@ export const MOCK_PROFILES: UserProfile[] = [
     usuallyEatsTogether: true,
     allowSameDishDifferentPortion: true,
     allowSeparateDish: false,
+    dataSource: 'Local Storage',
   },
   {
     id: '2',
@@ -47,6 +48,7 @@ export const MOCK_PROFILES: UserProfile[] = [
     usuallyEatsTogether: true,
     allowSameDishDifferentPortion: true,
     allowSeparateDish: false,
+    dataSource: 'Local Storage',
   },
   {
     id: '3',
@@ -68,6 +70,7 @@ export const MOCK_PROFILES: UserProfile[] = [
     usuallyEatsTogether: true,
     allowSameDishDifferentPortion: true,
     allowSeparateDish: false,
+    dataSource: 'Local Storage',
   },
   {
     id: '4',
@@ -89,6 +92,7 @@ export const MOCK_PROFILES: UserProfile[] = [
     usuallyEatsTogether: true,
     allowSameDishDifferentPortion: true,
     allowSeparateDish: false,
+    dataSource: 'Local Storage',
   },
 ];
 

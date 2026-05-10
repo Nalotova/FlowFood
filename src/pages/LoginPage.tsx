@@ -19,7 +19,7 @@ export const LoginPage: React.FC = () => {
         className="max-w-md w-full bg-white rounded-[48px] p-10 shadow-xl border border-stone-100 text-center space-y-8"
       >
         <div className="w-20 h-20 bg-natural-primary/10 rounded-3xl flex items-center justify-center mx-auto overflow-hidden">
-          <img src="/logo.png" alt="FlowFood" className="w-full h-full object-cover" />
+          <img src="/logo.svg" alt="FlowFood" className="w-full h-full object-cover" />
         </div>
         
         <div className="space-y-3">

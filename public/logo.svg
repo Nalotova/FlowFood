@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FCFBF8" />
+      <stop offset="100%" stop-color="#F3EAD5" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.05"/>
+    </filter>
+  </defs>
+
+  <!-- Warm ivory rounded-square background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)" />
+
+  <!-- Minimal plate symbol (sage/olive green outline) -->
+  <circle cx="256" cy="256" r="140" fill="none" stroke="#7A8B73" stroke-width="16" filter="url(#shadow)"/>
+  <circle cx="256" cy="256" r="90" fill="none" stroke="#A9B8A3" stroke-width="6" opacity="0.6"/>
+
+  <!-- Small leaf inside plate -->
+  <path d="M256,180 C290,180 306,200 306,225 C306,260 256,280 256,280 C256,280 206,260 206,225 C206,200 222,180 256,180 Z" fill="#7A8B73" filter="url(#shadow)"/>
+  <!-- Stem -->
+  <path d="M256,280 Q266,310 274,316" fill="none" stroke="#7A8B73" stroke-width="10" stroke-linecap="round"/>
+
+  <!-- Subtle AI sparkle (warm beige accent) -->
+  <path d="M360,140 Q370,160 390,170 Q370,180 360,200 Q350,180 330,170 Q350,160 360,140 Z" fill="#D4B08A"/>
+  <path d="M160,150 Q165,160 175,165 Q165,170 160,180 Q155,170 145,165 Q155,160 160,150 Z" fill="#D4B08A" opacity="0.8"/>
+  <path d="M380,340 Q385,350 395,355 Q385,360 380,370 Q375,360 365,355 Q375,350 380,340 Z" fill="#D4B08A" opacity="0.6"/>
+</svg>

@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { FoodItem } from '../../types/food';
-import { ThumbsUp, ThumbsDown, Package } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Package, Search, X } from 'lucide-react';
 import { i18n } from '../../i18n/ru';
 
 interface FoodPreferenceSelectorProps {
@@ -21,7 +21,23 @@ export const FoodPreferenceSelector: React.FC<FoodPreferenceSelectorProps> = ({
   excludedIds,
   onPreferenceChange
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
   const availableItems = foodItems.filter(f => f.amount > 0);
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+
+  const filteredItems = availableItems.filter(item => {
+    if (!normalizedQuery) return true;
+
+    return [
+      item.name,
+      item.brand,
+      item.notes,
+      ...(item.categories || [])
+    ]
+      .filter(Boolean)
+      .some(value => String(value).toLowerCase().includes(normalizedQuery));
+  });
 
   const togglePreference = (id: string, type: 'preferred' | 'excluded') => {
     let newPreferred = [...preferredIds];
@@ -49,6 +65,31 @@ export const FoodPreferenceSelector: React.FC<FoodPreferenceSelectorProps> = ({
   return (
     <div className="space-y-3">
       <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.cooking.fridgeProducts}</h4>
+      
+      {availableItems.length > 0 && (
+        <div className="relative px-2">
+          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400" size={14} />
+          <input
+            type="text"
+            placeholder="Найти продукт..."
+            className="w-full pl-9 pr-9 py-3 bg-stone-50 border border-stone-100 rounded-2xl text-xs font-bold text-stone-700 placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-natural-primary/10 transition-all"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-5 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 p-1">
+              <X size={14} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {availableItems.length > 0 && (
+        <div className="text-[9px] font-bold text-stone-400 uppercase tracking-widest px-2">
+          {searchQuery ? `Найдено: ${filteredItems.length} из ${availableItems.length}` : `Доступно: ${availableItems.length}`}
+        </div>
+      )}
+
       <div className="bg-stone-50 rounded-[32px] border border-stone-100 overflow-hidden">
         <div className="max-h-60 overflow-y-auto divide-y divide-stone-100 no-scrollbar">
           {availableItems.length === 0 ? (
@@ -56,8 +97,13 @@ export const FoodPreferenceSelector: React.FC<FoodPreferenceSelectorProps> = ({
               <Package className="mx-auto text-stone-200" size={32} />
               <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">{i18n.cooking.fridgeEmpty}</p>
             </div>
+          ) : filteredItems.length === 0 ? (
+            <div className="p-8 text-center space-y-2">
+              <p className="text-xs font-bold text-stone-700">Ничего не найдено</p>
+              <p className="text-[10px] text-stone-400">Попробуйте другое название продукта.</p>
+            </div>
           ) : (
-            availableItems.map((item) => (
+            filteredItems.map((item) => (
               <div key={item.id} className="flex items-center justify-between p-4 bg-white/50">
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">
