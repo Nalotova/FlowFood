@@ -25,7 +25,8 @@ export const callAiModel = async (input: AiCallInput, attempts = 2): Promise<str
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`AI API failed: ${response.status} ${errorText}`);
+      console.error(`AI API failed: ${response.status} ${errorText}`);
+      throw new Error("ИИ временно недоступен. Проверьте настройки API-ключа или попробуйте позже.");
     }
 
     const data = await response.json();

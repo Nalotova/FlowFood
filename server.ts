@@ -18,9 +18,38 @@ async function startServer() {
 
   app.post("/api/ai", async (req, res) => {
     const { prompt, images, systemInstruction, responseMimeType, modelName } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
+    
+    // Check multiple possible env vars
+    let apiKey = process.env.GEMINI_API_KEY;
+    let selectedKeySource = "GEMINI_API_KEY";
+    
     if (!apiKey) {
-      return res.status(500).json({ error: "GEMINI_API_KEY is not configured" });
+      apiKey = process.env.API_KEY;
+      selectedKeySource = "API_KEY";
+    }
+    if (!apiKey) {
+      apiKey = process.env.GOOGLE_API_KEY;
+      selectedKeySource = "GOOGLE_API_KEY";
+    }
+    if (!apiKey) {
+      apiKey = process.env.GOOGLE_GENAI_API_KEY;
+      selectedKeySource = "GOOGLE_GENAI_API_KEY";
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.log("AI endpoint called");
+      console.log("Selected API key source:", selectedKeySource);
+      console.log("Has GEMINI_API_KEY:", Boolean(process.env.GEMINI_API_KEY));
+      console.log("Has API_KEY:", Boolean(process.env.API_KEY));
+      console.log("Has GOOGLE_API_KEY:", Boolean(process.env.GOOGLE_API_KEY));
+      console.log("Has GOOGLE_GENAI_API_KEY:", Boolean(process.env.GOOGLE_GENAI_API_KEY));
+    }
+
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "AI key is not configured on the server",
+        details: "Set GEMINI_API_KEY or API_KEY in the server environment."
+      });
     }
     try {
       const ai = new GoogleGenAI({ apiKey });
