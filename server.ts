@@ -1,6 +1,5 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
-import { GoogleGenAI } from "@google/genai";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -15,49 +14,6 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json({ limit: '50mb' }));
-
-  // AI Proxy Route
-  app.post("/api/ai", async (req, res) => {
-    try {
-      const { prompt, images, systemInstruction, responseMimeType, modelName, apiKey: clientApiKey } = req.body;
-      
-      const apiKey = clientApiKey || process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server and no client key provided" });
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const parts: any[] = [{ text: prompt }];
-      
-      if (images && images.length > 0) {
-        images.forEach((base64: string) => {
-          const mimeType = base64.match(/data:([^;]+);base64,/)?.[1] || "image/jpeg";
-          const data = base64.replace(/^data:[^;]+;base64,/, "");
-          parts.push({
-            inlineData: {
-              data,
-              mimeType
-            }
-          });
-        });
-      }
-
-      const response = await ai.models.generateContent({
-        model: modelName || "gemini-2.0-flash",
-        contents: { parts },
-        config: {
-          systemInstruction,
-          responseMimeType,
-        }
-      });
-
-      res.json({ text: response.text });
-    } catch (error: any) {
-      console.error("AI Proxy Error:", error);
-      res.status(500).json({ error: error.message || "Internal Server Error" });
-    }
-  });
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

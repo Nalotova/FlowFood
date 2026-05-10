@@ -20,7 +20,7 @@ import { InviteNotifications } from './components/home/InviteNotifications';
 import { InstallPwaHint } from './components/InstallPwaHint';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('cooking');
+  const [activeTab, setActiveTab] = useState('history');
   const { user, loading, error, navbarHidden } = useApp();
 
   if (loading) {
@@ -105,7 +105,7 @@ export default function App() {
       case 'cooking':
         return <CookingPage />;
       case 'history':
-        return <HistoryPage />;
+        return <HistoryPage onSelectCooking={() => setActiveTab('cooking')} />;
       case 'settings':
         return <SettingsPage />;
       default:

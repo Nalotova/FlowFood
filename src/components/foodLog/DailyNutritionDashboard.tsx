@@ -96,8 +96,8 @@ export const DailyNutritionDashboard: React.FC<DailyNutritionDashboardProps> = (
     if (target === 0) return 'bg-stone-200';
     
     if (range) {
-      if (current < range.min) return 'bg-amber-400';
-      if (current <= range.max) return 'bg-natural-primary';
+      if (current < range.min) return 'bg-green-500';
+      if (current <= range.max) return 'bg-amber-500';
       return 'bg-red-500';
     }
 
@@ -223,7 +223,7 @@ export const DailyNutritionDashboard: React.FC<DailyNutritionDashboardProps> = (
                   <span className="text-[8px] text-stone-400 px-0.5">{item.unit}</span>
                   {item.range && (
                      <span className="text-[7px] text-stone-400 font-bold whitespace-nowrap">
-                       / {item.range.min}–{item.range.max}
+                       / норма {item.range.min}–{item.range.max}
                      </span>
                   )}
                 </div>
@@ -233,11 +233,11 @@ export const DailyNutritionDashboard: React.FC<DailyNutritionDashboardProps> = (
                    <div className="flex justify-between text-[7px] font-black text-stone-300 uppercase leading-none">
                     {item.range ? (
                       item.val < item.range.min ? (
-                        <span className="text-amber-500">+{Math.round(item.range.min - item.val)} г</span>
+                        <span className="lowercase">ост. {Math.round(item.range.min - item.val)}</span>
                       ) : item.val <= item.range.max ? (
-                        <span className="text-natural-primary">Норма</span>
+                        <span className="lowercase">норма</span>
                       ) : (
-                        <span className="text-red-500">Перебор {Math.round(item.val - item.range.max)}</span>
+                        <span className="text-red-500 lowercase">перебор {Math.round(item.val - item.range.max)}</span>
                       )
                     ) : (
                       <>

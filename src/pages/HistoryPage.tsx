@@ -21,7 +21,11 @@ import { DailyNutritionDashboard } from '../components/foodLog/DailyNutritionDas
 import { DailyAiNutritionCoach } from '../components/foodLog/DailyAiNutritionCoach';
 import { FoodLogEntryCard } from '../components/foodLog/FoodLogEntryCard';
 
-export const HistoryPage: React.FC = () => {
+export interface HistoryPageProps {
+  onSelectCooking?: () => void;
+}
+
+export const HistoryPage: React.FC<HistoryPageProps> = ({ onSelectCooking }) => {
   const { activeHousehold, permissions, userRole } = useApp();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | 'all'>('all');
@@ -205,16 +209,48 @@ export const HistoryPage: React.FC = () => {
             {sortedEntries.length === 0 ? (
               <motion.div 
                 key="empty-log"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col items-center justify-center py-12 text-center space-y-6"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-white rounded-[40px] border border-stone-100 p-10 text-center space-y-8 shadow-sm"
               >
-                <div className="w-24 h-24 bg-stone-50 border border-stone-100 rounded-full flex items-center justify-center text-stone-200">
-                  <HistoryIcon size={48} strokeWidth={1.5} />
+                <div className="w-20 h-20 bg-natural-primary/5 rounded-[32px] flex items-center justify-center text-natural-primary mx-auto">
+                  <Plus size={32} />
                 </div>
-                <div className="space-y-4 px-8">
-                  <h3 className="font-serif font-bold text-stone-800 text-xl">{i18n.history.emptyTitle}</h3>
-                  <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest leading-relaxed">{i18n.history.emptyText}</p>
+                
+                <div className="space-y-3">
+                  <h3 className="font-serif font-black text-stone-800 text-2xl tracking-tight">Сегодня чистый лист</h3>
+                  <p className="text-xs text-stone-500 leading-relaxed max-w-[240px] mx-auto">
+                    Добавь первый приём пищи, и я покажу, как закрываются калории, белки, жиры и углеводы.
+                  </p>
+                </div>
+
+                {activeProfile ? (
+                  <div className="bg-stone-50 rounded-2xl py-3 px-4 inline-block">
+                    <p className="text-[10px] font-black text-natural-primary uppercase tracking-widest leading-none">
+                      Цель на день: {activeProfile.dailyKcal} ккал · Б {activeProfile.proteinTarget} г · Ж {activeProfile.nutritionTargets?.fatMode === 'range' ? `${activeProfile.nutritionTargets.fatMinGrams}–${activeProfile.nutritionTargets.fatMaxGrams}` : activeProfile.fatTarget} г · У {activeProfile.carbTarget} г
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-amber-50 rounded-2xl py-3 px-4 inline-block border border-amber-100">
+                    <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest leading-none">
+                      Заполни цели в профиле, чтобы видеть дневной прогресс.
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-col space-y-3 pt-4">
+                  <button 
+                    onClick={() => setIsSnackOpen(true)}
+                    className="w-full bg-natural-primary text-white py-4 rounded-[20px] text-xs font-black uppercase tracking-widest shadow-lg shadow-natural-primary/20 hover:scale-105 active:scale-95 transition-all"
+                  >
+                    Добавить еду
+                  </button>
+                  <button 
+                    onClick={onSelectCooking}
+                    className="w-full bg-stone-50 text-stone-500 py-4 rounded-[20px] text-xs font-black uppercase tracking-widest hover:bg-stone-100 active:scale-95 transition-all"
+                  >
+                    Что приготовить?
+                  </button>
                 </div>
               </motion.div>
             ) : (

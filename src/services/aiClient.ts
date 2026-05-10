@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { GoogleGenAI } from "@google/genai";
+
 export interface AiCallInput {
   prompt: string;
   images?: string[]; // base64 strings
@@ -11,33 +13,44 @@ export interface AiCallInput {
 }
 
 export const callAiModel = async (input: AiCallInput, attempts = 2): Promise<string> => {
-  const { prompt, images, systemInstruction, responseMimeType = "application/json" } = input;
-  const modelName = import.meta.env.VITE_GEMINI_MODEL_NAME || "gemini-2.0-flash";
-  const customApiKey = localStorage.getItem('custom_gemini_api_key') || undefined;
+  const { prompt, images, systemInstruction, responseMimeType = "text/plain" } = input;
+  
+  // Use process.env.GEMINI_API_KEY as explicitly required by the gemini-api skill for React (Vite)
+  const apiKey = process.env.GEMINI_API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY is not available in the environment.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const modelName = import.meta.env.VITE_GEMINI_MODEL_NAME || "gemini-3-flash-preview";
 
   try {
-    const response = await fetch("/api/ai", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-        images,
-        systemInstruction,
-        responseMimeType,
-        modelName,
-        apiKey: customApiKey,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    const parts: any[] = [{ text: prompt }];
+    
+    if (images && images.length > 0) {
+      images.forEach((base64: string) => {
+        const mimeType = base64.match(/data:([^;]+);base64,/)?.[1] || "image/jpeg";
+        const data = base64.replace(/^data:[^;]+;base64,/, "");
+        parts.push({
+          inlineData: {
+            data,
+            mimeType
+          }
+        });
+      });
     }
 
-    const data = await response.json();
-    return data.text || "";
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: [{ role: 'user', parts }],
+      config: {
+        systemInstruction,
+        responseMimeType,
+      }
+    });
+
+    return response.text || "";
   } catch (error: any) {
     console.error(`AI Call failed (attempts remaining: ${attempts}):`, error);
     
