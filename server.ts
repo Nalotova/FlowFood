@@ -19,11 +19,11 @@ async function startServer() {
   // AI Proxy Route
   app.post("/api/ai", async (req, res) => {
     try {
-      const { prompt, images, systemInstruction, responseMimeType, modelName } = req.body;
+      const { prompt, images, systemInstruction, responseMimeType, modelName, apiKey: clientApiKey } = req.body;
       
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = clientApiKey || process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server" });
+        return res.status(500).json({ error: "GEMINI_API_KEY is not set on the server and no client key provided" });
       }
 
       const ai = new GoogleGenAI({ apiKey });

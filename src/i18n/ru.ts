@@ -379,5 +379,22 @@ export const i18n = {
   history: {
     emptyTitle: "Пока ничего не записано",
     emptyText: "Здесь появятся продукты и приёмы пищи, которые вы добавили вручную или приняли из раздела ‘Что готовим?’.",
+  },
+  diary: {
+    dashboard: "Дневной дашборд",
+    remaining: "Остаток",
+    consumed: "Съедено",
+    target: "Цель",
+    coach: "ИИ-Нутрициолог",
+    coachSubtitle: "Анализ дня и рекомендации",
+    copyToChef: "Скопировать для повара",
+    copySuccess: "Блюдо скопировано!",
+    aiRecommendation: "Рекомендация ИИ",
+    nextMealSuggestions: "Варианты для следующего приема пищи",
+    currentStatus: "Текущий статус",
+    exceededNutrients: "Превышение:",
+    nearLimitNutrients: "Близко к лимиту:",
+    missingNutrients: "Не хватает:",
+    suggestedDish: "Предложенное блюдо",
   }
 };

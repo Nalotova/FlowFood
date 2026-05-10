@@ -22,6 +22,7 @@ import { CookingResultCard } from '../components/cooking/CookingResultCard';
 import { TotalIngredientsTable } from '../components/cooking/TotalIngredientsTable';
 import { PortionsByPersonTable } from '../components/cooking/PortionsByPersonTable';
 import { InventoryAfterTable } from '../components/cooking/InventoryAfterTable';
+import { CookingResultEditor } from '../components/cooking/CookingResultEditor';
 import { DiagnosticsPanel } from '../components/cooking/DiagnosticsPanel';
 import { ChefChat } from '../components/chef/ChefChat';
 import { ProposedRevisionCard } from '../components/chef/ProposedRevisionCard';
@@ -68,6 +69,7 @@ export const CookingPage: React.FC = () => {
   const [isSnackFormOpen, setIsSnackOpen] = useState(false);
   const [summaries, setSummaries] = useState<Record<string, DailyNutritionSummary>>({});
   const [isAccepted, setIsAccepted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChefChatMessage[]>([]);
@@ -76,7 +78,7 @@ export const CookingPage: React.FC = () => {
     message: string;
   } | null>(null);
 
-  const isDev = true; 
+  const isDev = import.meta.env.DEV; 
 
   const addTestData = async () => {
     if (!confirm('Добавить тестовые данные?')) return;
@@ -286,6 +288,32 @@ export const CookingPage: React.FC = () => {
           unit: 'порция',
           grams: totalGrams,
           subtractFromFridge: false,
+          sourceCookingResultId: result.id,
+          sourceCookingResultSnapshot: {
+            mealName: result.mealName,
+            mealIdea: result.mealIdea,
+            explanation: result.explanation,
+            recipe: result.recipe ? {
+              steps: result.recipe.steps,
+              tasteNotes: result.recipe.tasteNotes,
+              warnings: result.recipe.warnings,
+            } : undefined,
+            totalIngredients: result.totalIngredients.map(ti => ({
+              foodName: ti.foodName,
+              totalAmount: ti.totalAmount,
+              unit: ti.unit,
+            })),
+            portionItems: portion.items.map(pi => ({
+              foodName: pi.foodName,
+              amount: pi.amount,
+              unit: pi.unit,
+              kcal: pi.kcal,
+              protein: pi.protein,
+              fat: pi.fat,
+              carbs: pi.carbs,
+            })),
+            warnings: result.warnings,
+          }
         });
       }
 
@@ -301,8 +329,13 @@ export const CookingPage: React.FC = () => {
   };
 
   const handleManualEdit = () => {
-    console.log("Manual edit requested");
-    alert('Ручное редактирование будет доступно в следующих обновлениях. Попробуйте уточнить запрос через чат ниже.');
+    setIsEditing(true);
+  };
+
+  const handleSaveManualEdit = (updatedResult: CookingResult) => {
+    setResult(updatedResult);
+    setPendingRevision(null);
+    setIsEditing(false);
   };
 
   const handleSendMessage = async (message: string) => {
@@ -483,6 +516,18 @@ export const CookingPage: React.FC = () => {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {isEditing && result && (
+          <CookingResultEditor 
+            result={result}
+            foodItems={items}
+            profiles={profiles}
+            onSave={handleSaveManualEdit}
+            onCancel={() => setIsEditing(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="space-y-8 pt-2 pb-32">
         {!result ? (
           <>
@@ -498,7 +543,7 @@ export const CookingPage: React.FC = () => {
                     <FlaskConical size={18} />
                   </button>
                 )}
-                <div className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm hover:scale-110 transition-transform">
+                <div className="w-10 h-10 bg-natural-accent rounded-full flex items-center justify-center text-natural-primary shadow-sm">
                   <ChefHat size={20} />
                 </div>
               </div>

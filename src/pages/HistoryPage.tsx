@@ -17,13 +17,26 @@ import { estimateFoodFromPhotos, FoodEstimationResult } from '../services/photoF
 import { RecipeDetailModal } from '../components/cooking/RecipeDetailModal';
 import { useApp } from '../contexts/AppContext';
 import { CookingResult } from '../types/cooking';
+import { DailyNutritionDashboard } from '../components/foodLog/DailyNutritionDashboard';
+import { DailyAiNutritionCoach } from '../components/foodLog/DailyAiNutritionCoach';
+import { FoodLogEntryCard } from '../components/foodLog/FoodLogEntryCard';
 
 export const HistoryPage: React.FC = () => {
   const { activeHousehold, permissions, userRole } = useApp();
-  const { entries, deleteEntry, addEntry, loading: logLoading } = useFoodLog();
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | 'all'>('all');
+  
+  const { entries, deleteEntry, addEntry, loading: logLoading } = useFoodLog(selectedDate);
   const { items, setAmount } = useFridge();
   const { profiles } = useProfiles();
   const [isSnackOpen, setIsSnackOpen] = useState(false);
+
+  // Auto-select single profile
+  React.useEffect(() => {
+    if (profiles.length === 1 && selectedProfileId === 'all') {
+      setSelectedProfileId(profiles[0].id);
+    }
+  }, [profiles, selectedProfileId]);
   const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const [estimationResult, setEstimationResult] = useState<FoodEstimationResult | null>(null);
   const [view, setView] = useState<'log' | 'cooking'>('log');
@@ -46,11 +59,17 @@ export const HistoryPage: React.FC = () => {
     }
   }, [view, fetchCookingHistory]);
 
-  const sortedEntries = [...entries].sort((a, b) => 
+  const filteredEntries = entries.filter(entry => 
+    (selectedProfileId === 'all' || entry.profileId === selectedProfileId)
+  );
+
+  const sortedEntries = [...filteredEntries].sort((a, b) => 
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-   if (logLoading || (view === 'cooking' && historyLoading)) {
+  const activeProfile = profiles.find(p => p.id === selectedProfileId);
+
+  if (logLoading || (view === 'cooking' && historyLoading)) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-stone-300">
         <div className="w-10 h-10 border-4 border-dashed border-stone-200 rounded-full animate-spin mb-4" />
@@ -165,71 +184,52 @@ export const HistoryPage: React.FC = () => {
       
       <AnimatePresence mode="popLayout">
         {view === 'log' ? (
-          entries.length === 0 ? (
-            <motion.div 
-              key="empty-log"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center justify-center py-24 text-center space-y-6"
-            >
-              <div className="w-24 h-24 bg-stone-50 border border-stone-100 rounded-full flex items-center justify-center text-stone-200">
-                <HistoryIcon size={48} strokeWidth={1.5} />
-              </div>
-              <div className="space-y-4 px-8">
-                <h3 className="font-serif font-bold text-stone-800 text-xl">{i18n.history.emptyTitle}</h3>
-                <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest leading-relaxed">{i18n.history.emptyText}</p>
-              </div>
-            </motion.div>
-          ) : (
-            <div className="space-y-4">
-              {sortedEntries.map((entry) => (
-                <motion.div 
-                  key={entry.id}
-                  layout
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-white p-5 rounded-[32px] border border-stone-100 shadow-sm flex items-center space-x-4 group relative overflow-hidden"
-                >
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${
-                    entry.type === 'planned_meal' ? 'bg-natural-accent text-natural-primary' : 'bg-stone-50 text-stone-400'
-                  }`}>
-                    {entry.type === 'planned_meal' ? <div className="text-lg">🍲</div> : <Clock size={20} />}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-1.5 mb-0.5">
-                      <User size={10} className="text-stone-300" />
-                      <span className="text-[10px] font-black text-stone-400 uppercase tracking-tighter truncate">
-                        {entry.profileName}
-                      </span>
-                      <span className="text-[10px] text-stone-200 px-1">•</span>
-                      <span className="text-[10px] font-bold text-stone-300 uppercase tracking-widest">
-                        {i18n.foodLog.types[entry.type as keyof typeof i18n.foodLog.types]}
-                      </span>
-                    </div>
-                    <h4 className="font-bold text-stone-800 text-sm truncate">{entry.foodName}</h4>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className="text-[10px] font-black text-natural-primary bg-natural-primary/5 px-2 py-0.5 rounded-full">
-                        {entry.kcal} {i18n.common.kcalAbbr}
-                      </span>
-                      <span className="text-[10px] font-bold text-stone-400">
-                        {entry.amount} {i18n.fridge.units[entry.unit as keyof typeof i18n.fridge.units] || entry.unit}
-                      </span>
-                    </div>
-                  </div>
+          <div className="space-y-6">
+            <DailyNutritionDashboard 
+              entries={entries}
+              profiles={profiles}
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              selectedProfileId={selectedProfileId}
+              onProfileChange={setSelectedProfileId}
+            />
 
-                  {permissions.canEdit && (
-                    <button 
-                      onClick={() => deleteEntry(entry.id)}
-                      className="p-3 text-stone-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </motion.div>
-              ))}
-            </div>
-          )
+            {activeProfile && (
+              <DailyAiNutritionCoach 
+                profile={activeProfile}
+                entries={filteredEntries}
+                fridgeItems={items}
+              />
+            )}
+
+            {sortedEntries.length === 0 ? (
+              <motion.div 
+                key="empty-log"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="flex flex-col items-center justify-center py-12 text-center space-y-6"
+              >
+                <div className="w-24 h-24 bg-stone-50 border border-stone-100 rounded-full flex items-center justify-center text-stone-200">
+                  <HistoryIcon size={48} strokeWidth={1.5} />
+                </div>
+                <div className="space-y-4 px-8">
+                  <h3 className="font-serif font-bold text-stone-800 text-xl">{i18n.history.emptyTitle}</h3>
+                  <p className="text-[10px] font-bold text-stone-300 uppercase tracking-widest leading-relaxed">{i18n.history.emptyText}</p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="space-y-4">
+                {sortedEntries.map((entry) => (
+                  <FoodLogEntryCard 
+                    key={entry.id}
+                    entry={entry}
+                    canEdit={permissions.canEdit}
+                    onDelete={() => deleteEntry(entry.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         ) : (
           cookingHistory.length === 0 ? (
             <motion.div 

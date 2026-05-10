@@ -24,6 +24,8 @@ interface AppContextType {
   declineInvite: (inviteId: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  navbarHidden: boolean;
+  setNavbarHidden: (hidden: boolean) => void;
   permissions: {
     canEdit: boolean;
     canInvite: boolean;
@@ -40,6 +42,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [pendingInvites, setPendingInvites] = useState<HouseholdInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [navbarHidden, setNavbarHidden] = useState(false);
 
   useEffect(() => {
     if (authError) {
@@ -212,6 +215,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       acceptInvite,
       declineInvite,
       permissions,
+      navbarHidden,
+      setNavbarHidden,
       signInWithGoogle: async () => {
         try {
           await authService.signInWithGoogle();

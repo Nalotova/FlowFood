@@ -14,10 +14,10 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
   const tabs = [
-    { id: 'profiles', label: i18n.navigation.profiles, icon: User },
-    { id: 'fridge', label: i18n.navigation.fridge, icon: Refrigerator },
     { id: 'cooking', label: i18n.navigation.cooking, icon: CookingPot },
     { id: 'history', label: i18n.navigation.history, icon: History },
+    { id: 'fridge', label: i18n.navigation.fridge, icon: Refrigerator },
+    { id: 'profiles', label: i18n.navigation.profiles, icon: User },
     { id: 'settings', label: i18n.navigation.settings, icon: Settings },
   ];
 

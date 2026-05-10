@@ -13,6 +13,7 @@ export interface AiCallInput {
 export const callAiModel = async (input: AiCallInput, attempts = 2): Promise<string> => {
   const { prompt, images, systemInstruction, responseMimeType = "application/json" } = input;
   const modelName = import.meta.env.VITE_GEMINI_MODEL_NAME || "gemini-2.0-flash";
+  const customApiKey = localStorage.getItem('custom_gemini_api_key') || undefined;
 
   try {
     const response = await fetch("/api/ai", {
@@ -26,6 +27,7 @@ export const callAiModel = async (input: AiCallInput, attempts = 2): Promise<str
         systemInstruction,
         responseMimeType,
         modelName,
+        apiKey: customApiKey,
       }),
     });
 

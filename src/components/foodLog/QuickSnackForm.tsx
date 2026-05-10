@@ -158,7 +158,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
                 mode === 'text' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
               }`}
             >
-              Текст
+              Текст (скоро)
             </button>
             <button
               type="button"
@@ -167,7 +167,7 @@ export const QuickSnackForm: React.FC<QuickSnackFormProps> = ({
                 mode === 'photo' ? 'bg-white text-natural-primary shadow-sm' : 'text-stone-400'
               }`}
             >
-              По фото
+              По фото (скоро)
             </button>
           </div>
 

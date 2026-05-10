@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { LogOut, CloudUpload, User, ShieldCheck, CheckCircle2, AlertCircle, Loader2, UserPlus, Users, Trash2, Shield, Settings2, Home } from 'lucide-react';
+import { LogOut, CloudUpload, User, ShieldCheck, CheckCircle2, AlertCircle, Loader2, UserPlus, Users, Trash2, Shield, Settings2, Home, Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { i18n } from '../i18n/ru';
 import { DiagnosticsPanel } from '../components/cooking/DiagnosticsPanel';
@@ -24,6 +24,18 @@ export const SettingsPage: React.FC = () => {
   const { user, signOut, activeHousehold, userAppProfile, permissions, refreshData, switchHousehold } = useApp();
   const [migrating, setMigrating] = useState(false);
   const [hasLocalData, setHasLocalData] = useState(false);
+  const [customApiKey, setCustomApiKey] = useState(localStorage.getItem('custom_gemini_api_key') || '');
+  const [isApiKeySaved, setIsApiKeySaved] = useState(false);
+  
+  const handleSaveApiKey = () => {
+    if (customApiKey.trim() === '') {
+      localStorage.removeItem('custom_gemini_api_key');
+    } else {
+      localStorage.setItem('custom_gemini_api_key', customApiKey.trim());
+    }
+    setIsApiKeySaved(true);
+    setTimeout(() => setIsApiKeySaved(false), 2000);
+  };
   const [migrationStats, setMigrationStats] = useState({
     profiles: 0,
     items: 0,
@@ -134,8 +146,39 @@ export const SettingsPage: React.FC = () => {
       {/* Household Management */}
       <HouseholdManager />
 
-      {/* Migration Card */}
-      {hasLocalData && (
+      {/* Gemini API Key Configuration */}
+      <div className="space-y-3">
+        <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">AI Настройки</h4>
+        <div className="bg-white rounded-[32px] border border-stone-100 p-6 space-y-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-natural-muted rounded-2xl flex items-center justify-center text-natural-primary">
+              <Key size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-stone-800">Свой Gemini API Key</h3>
+              <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Опционально (для опубликованной версии)</p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="password"
+              placeholder="AIzaSy..."
+              value={customApiKey}
+              onChange={(e) => setCustomApiKey(e.target.value)}
+              className="flex-1 bg-stone-50 border border-stone-100 rounded-2xl py-4 px-4 text-xs font-bold text-stone-800 outline-none focus:ring-2 focus:ring-natural-primary/10 transition-all font-mono"
+            />
+            <button
+              onClick={handleSaveApiKey}
+              className="py-4 px-8 bg-natural-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all shadow-lg shadow-natural-primary/20 flex-shrink-0 min-w-[120px]"
+            >
+              {isApiKeySaved ? 'Сохранено!' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Migration Card (Dev only) */}
+      {import.meta.env.DEV && hasLocalData && (
         <div className="space-y-3">
           <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">Миграция данных</h4>
           <div className="bg-white rounded-[32px] p-6 border-2 border-dashed border-stone-100 space-y-4">
@@ -186,22 +229,26 @@ export const SettingsPage: React.FC = () => {
         <p className="text-[9px] text-stone-300 font-bold italic">Все изменения мгновенно сохраняются в Firestore</p>
       </div>
 
-      <DiagnosticsPanel />
+      {import.meta.env.DEV && (
+        <>
+          <DiagnosticsPanel />
 
-      {/* Debug Info for Role (Temporary) */}
-      <div className="mt-8 p-4 bg-stone-900 rounded-3xl text-[10px] font-mono text-stone-500 space-y-1">
-        <p className="text-stone-300 font-bold mb-2 uppercase tracking-widest">Диагностика роли</p>
-        <p>User UID: {user?.uid}</p>
-        <p>Household ID: {activeHousehold?.id}</p>
-        <p>Owner UID: {activeHousehold?.ownerUserId}</p>
-        <p>Computed Role: {permissions.canInvite ? 'Owner/Admin' : 'Viewer/Member'}</p>
-        <p>Actual Role: {(() => {
-          if (activeHousehold?.ownerUserId === user?.uid) return 'owner (by ID match)';
-          return activeHousehold?.members?.find(m => m.userId === user?.uid)?.role || 'viewer (fallback)';
-        })()}</p>
-        <p>Members Length: {activeHousehold?.members?.length || 0}</p>
-        <p>Is Owner By ID: {user?.uid && activeHousehold?.ownerUserId && user.uid === activeHousehold.ownerUserId ? 'YES' : 'NO'}</p>
-      </div>
+          {/* Debug Info for Role (Temporary) */}
+          <div className="mt-8 p-4 bg-stone-900 rounded-3xl text-[10px] font-mono text-stone-500 space-y-1">
+            <p className="text-stone-300 font-bold mb-2 uppercase tracking-widest">Диагностика роли</p>
+            <p>User UID: {user?.uid}</p>
+            <p>Household ID: {activeHousehold?.id}</p>
+            <p>Owner UID: {activeHousehold?.ownerUserId}</p>
+            <p>Computed Role: {permissions.canInvite ? 'Owner/Admin' : 'Viewer/Member'}</p>
+            <p>Actual Role: {(() => {
+              if (activeHousehold?.ownerUserId === user?.uid) return 'owner (by ID match)';
+              return activeHousehold?.members?.find(m => m.userId === user?.uid)?.role || 'viewer (fallback)';
+            })()}</p>
+            <p>Members Length: {activeHousehold?.members?.length || 0}</p>
+            <p>Is Owner By ID: {user?.uid && activeHousehold?.ownerUserId && user.uid === activeHousehold.ownerUserId ? 'YES' : 'NO'}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 };

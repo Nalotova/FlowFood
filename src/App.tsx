@@ -20,8 +20,8 @@ import { InviteNotifications } from './components/home/InviteNotifications';
 import { InstallPwaHint } from './components/InstallPwaHint';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('profiles');
-  const { user, loading, error } = useApp();
+  const [activeTab, setActiveTab] = useState('cooking');
+  const { user, loading, error, navbarHidden } = useApp();
 
   if (loading) {
     return (
@@ -145,7 +145,7 @@ export default function App() {
       </main>
 
       {/* <InstallPwaHint /> */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {!navbarHidden && <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />}
     </div>
   );
 }
