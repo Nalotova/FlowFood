@@ -83,6 +83,20 @@ export const aiCookingService = {
     
     // 3. Parse and Validate
     const aiData = parseAiCookingResponse(responseText);
+
+    // Post-validation for preferred foods
+    if (request.preferredFoodIds.length > 0) {
+        const usedIds = new Set<string>();
+        aiData.portions.forEach(p => p.items.forEach(i => usedIds.add(i.foodItemId)));
+        
+        const missingPreferred = request.preferredFoodIds.filter(id => !usedIds.has(id));
+        if (missingPreferred.length > 0) {
+            const missingNames = missingPreferred.map(id => foodItems.find(f => f.id === id)?.name).join(", ");
+            if (!aiData.warnings) aiData.warnings = [];
+            aiData.warnings.push(`ИИ не использовал выбранный продукт: ${missingNames}`);
+        }
+    }
+    
     const validatedData = fixAndValidateAiResponse(aiData, foodItems);
     validateAiCookingResponse(validatedData, foodItems, targetInfo);
 
@@ -155,6 +169,20 @@ export const aiCookingService = {
     
     // 3. Parse and Validate
     const aiData = parseAiCookingResponse(responseText);
+
+    // Post-validation for preferred foods
+    if (request.preferredFoodIds.length > 0) {
+        const usedIds = new Set<string>();
+        aiData.portions.forEach(p => p.items.forEach(i => usedIds.add(i.foodItemId)));
+        
+        const missingPreferred = request.preferredFoodIds.filter(id => !usedIds.has(id));
+        if (missingPreferred.length > 0) {
+            const missingNames = missingPreferred.map(id => foodItems.find(f => f.id === id)?.name).join(", ");
+            if (!aiData.warnings) aiData.warnings = [];
+            aiData.warnings.push(`ИИ не использовал выбранный продукт: ${missingNames}`);
+        }
+    }
+    
     const validatedData = fixAndValidateAiResponse(aiData, foodItems);
     validateAiCookingResponse(validatedData, foodItems, targetInfo);
 
@@ -180,24 +208,19 @@ const getSystemInstruction = () => `
 
 Жёсткие правила:
 1. Используй только продукты из списка availableFoodItems.
-2. Не используй продукты из excludedFoodIds.
+2. Не используй продукты из excludedFoodIds (запрещённые полностью).
 3. Не превышай остатки продуктов (amount в availableFoodItems). Это критически важно!
-4. ИСПОЛЬЗУЙ ТЕ ЖЕ ЕДИНИЦЫ ИЗМЕРЕНИЯ (unit), что указаны для продукта в availableFoodItems. Например: 'g', 'kg', 'ml', 'l', 'piece', 'package'. Если у огурцов стоит 'piece', пиши количество в штуках (например 0.5), а не в граммах.
+4. ИСПОЛЬЗУЙ ТЕ ЖЕ ЕДИНИЦЫ ИЗМЕРЕНИЯ (unit), что указаны для продукта в availableFoodItems.
 5. Учитывай allergies и forbiddenFoods как строгие запреты.
 6. Учитывай dislikedFoods как мягкое ограничение.
-7. Для режима same_dish_different_portions используй один общий набор продуктов для всех, но разные граммы.
-8. Для режима separate_dishes можно давать разные блюда по участникам.
-9. Попадай в targetMealKcal каждого участника примерно ±15%.
-10. Учитывай macroTargets участников (белки, жиры, углеводы), если они заданы. Белок имеет высокий приоритет. Если задан proteinMin, старайся достичь его, даже если калории немного отклонятся.
-11. Не придумывай новые продукты.
-12. В поле "foodItemId" ОБЯЗАТЕЛЬНО записывай "id" продукта из списка availableFoodItems. Это критически важно!
-13. Не предлагай абсурдные порции (например, 2г картошки).
-14. В поле "recipe" ВСЕГДА пиши пошаговый рецепт приготовления.
-15. Если в статусе feasibility указано "can_make_modified", обязательно отрази это в названии блюда (например, "Овощной суп в стиле борща") и объясни замены в explanation.
-16. Если холодильник почти пуст и сбалансированное блюдо создать невозможно, верни "status": "needs_more_food" и в explanation предложи список продуктов для покупки (яйца, крупы, белок).
+7. Продукты из mustUseFoodItems — это продукты, которые пользователь специально отметил как “использовать обязательно”.
+8. Если mustUseFoodItems не пустой, ты обязан включить каждый продукт из mustUseFoodItems в итоговые portions хотя бы в разумном количестве, если это физически возможно.
+9. Не игнорируй mustUseFoodItems ради более удобного рецепта.
+10. Если какой-то продукт из mustUseFoodItems невозможно использовать из-за аллергии, запрета, несовместимости с requestedDish или нулевого количества, добавь понятное объяснение в warnings.
 
-Философия питания:
-- Простая домашняя еда, но вкусная.
+};
+
+�няя еда, но вкусная.
 - Контролируемые калории без ощущения "наказания" или "диетической грусти".
 - Еда должна давать сытость и физически, и психологически.
 - Если можно добавить вкус без роста калорий (специи, зелень, лимон, чеснок) — предлагай это в tasteNotes.
@@ -272,44 +295,68 @@ const buildCookingPrompt = (
     };
   });
 
-  const availableFoodItems = foodItems
-    .filter(f => f.amount > 0 && !request.excludedFoodIds.includes(f.id))
-    .map(f => ({
-      id: f.id,
-      name: f.name,
-      amount: f.amount,
-      unit: f.unit,
-      gramsPerUnit: f.gramsPerUnit,
-      kcalPer100g: f.kcalPer100g,
-      proteinPer100g: f.proteinPer100g,
-      fatPer100g: f.fatPer100g,
-      carbsPer100g: f.carbsPer100g,
-      categories: f.categories || []
-    }));
+    const availableFoodItems = foodItems
+      .filter(f => f.amount > 0 && !request.excludedFoodIds.includes(f.id))
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        amount: f.amount,
+        unit: f.unit,
+        gramsPerUnit: f.gramsPerUnit,
+        kcalPer100g: f.kcalPer100g,
+        proteinPer100g: f.proteinPer100g,
+        fatPer100g: f.fatPer100g,
+        carbsPer100g: f.carbsPer100g,
+        categories: f.categories || []
+      }));
 
-  const recentMeals = foodLogEntries
-    .filter(e => e.type === 'planned_meal')
-    .slice(-5)
-    .map(e => ({
-      date: e.date,
-      mealType: e.mealType,
-      mealName: e.foodName,
-      mainIngredients: [] // We don't store ingredients separately in log yet
-    }));
+    const mustUseFoodItems = foodItems
+      .filter(f => f.amount > 0 && request.preferredFoodIds.includes(f.id))
+      .map(f => ({
+        id: f.id,
+        name: f.name,
+        amount: f.amount,
+        unit: f.unit,
+        gramsPerUnit: f.gramsPerUnit,
+        kcalPer100g: f.kcalPer100g,
+        proteinPer100g: f.proteinPer100g,
+        fatPer100g: f.fatPer100g,
+        carbsPer100g: f.carbsPer100g,
+        categories: f.categories || []
+      }));
 
-  return JSON.stringify({
-    mealType: request.mealType,
-    mode: request.mode,
-    targetStrategy: request.targetStrategy,
-    userComment: request.userComment,
-    recentMeals,
-    participants,
-    availableFoodItems,
-    preferredFoodIds: request.preferredFoodIds,
-    excludedFoodIds: request.excludedFoodIds,
-    dishFeasibility: feasibility
-  }, null, 2);
-};
+    const excludedFoodItems = foodItems
+      .filter(f => request.excludedFoodIds.includes(f.id))
+      .map(f => ({
+        id: f.id,
+        name: f.name
+      }));
+
+    const recentMeals = foodLogEntries
+      .filter(e => e.type === 'planned_meal')
+      .slice(-5)
+      .map(e => ({
+        date: e.date,
+        mealType: e.mealType,
+        mealName: e.foodName,
+        mainIngredients: [] // We don't store ingredients separately in log yet
+      }));
+
+    return JSON.stringify({
+      mealType: request.mealType,
+      mode: request.mode,
+      targetStrategy: request.targetStrategy,
+      userComment: request.userComment,
+      recentMeals,
+      participants,
+      availableFoodItems,
+      mustUseFoodItems,
+      excludedFoodItems,
+      preferredFoodIds: request.preferredFoodIds,
+      excludedFoodIds: request.excludedFoodIds,
+      dishFeasibility: feasibility
+    }, null, 2);
+  };
 
 const parseAiCookingResponse = (text: string): AiResponse => {
   try {

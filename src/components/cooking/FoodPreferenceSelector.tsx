@@ -65,6 +65,7 @@ export const FoodPreferenceSelector: React.FC<FoodPreferenceSelectorProps> = ({
   return (
     <div className="space-y-3">
       <h4 className="text-[10px] font-black text-stone-400 uppercase tracking-widest px-2">{i18n.cooking.fridgeProducts}</h4>
+      <p className="text-[9px] text-stone-400 px-2">👍 использовать обязательно · 👎 не использовать</p>
       
       {availableItems.length > 0 && (
         <div className="relative px-2">
@@ -110,7 +111,15 @@ export const FoodPreferenceSelector: React.FC<FoodPreferenceSelectorProps> = ({
                     {item.categories.includes('meat') ? '🍗' : item.categories.includes('vegetable') ? '🥦' : '📦'}
                   </span>
                   <div>
-                    <div className="text-xs font-bold text-stone-700">{item.name}</div>
+                    <div className="flex items-center">
+                      <div className="text-xs font-bold text-stone-700">{item.name}</div>
+                      {preferredIds.includes(item.id) && (
+                        <span className="text-[9px] font-bold text-green-700 bg-green-50 px-1.5 py-0.5 rounded-md ml-2">использовать</span>
+                      )}
+                      {excludedIds.includes(item.id) && (
+                        <span className="text-[9px] font-bold text-red-700 bg-red-50 px-1.5 py-0.5 rounded-md ml-2">не использовать</span>
+                      )}
+                    </div>
                     <div className="text-[9px] font-bold text-stone-400 uppercase">{item.amount} {i18n.fridge.units[item.unit as keyof typeof i18n.fridge.units] || item.unit}</div>
                   </div>
                 </div>
