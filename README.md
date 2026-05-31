@@ -1,33 +1,99 @@
 # FlowFood
 
-An AI-powered household nutrition planner that helps families manage fridge inventory, plan meals from available ingredients, calculate personalized portions, and keep a daily food log.
+An AI-powered meal planner that works backwards from nutrition goals to real recipes. Instead of only logging what the user has already eaten, FlowFood uses target calories and macros, current fridge inventory, meal type, and personal preferences to generate a complete meal with exact gram amounts, recipe steps, and per-person portions.
 
-FlowFood is built around a practical home problem: what can we cook today, for which family members, with the food already available, while respecting calories, preferences, allergies, and remaining inventory.
+FlowFood was built around a practical limitation of traditional calorie trackers: apps like FatSecret or similar tools record food well, but the user still has to decide what to eat in order to hit protein, fat, carb, and calorie targets. FlowFood reverses that workflow. The user sets nutrition goals first, then the AI creates a realistic meal from the food available at home.
+
+## Core Concept
+
+Traditional calorie tracker:
+
+```text
+User eats food -> user logs food -> app shows calories and macros
+```
+
+FlowFood:
+
+```text
+User defines kcal and macro goals
+  + current meal type: breakfast, lunch, snack, or dinner
+  + available fridge ingredients
+  + preferences and cravings
+  v
+AI generates a meal that fits the target
+  + exact grams
+  + per-person portions
+  + recipe steps
+  + ingredient write-off
+  + food log entry
+```
+
+The main product idea is macro-aware meal generation: the app does not just say what was eaten, it helps decide what to eat next.
 
 ## Project Highlights
 
+- Reverse meal planning from target calories and macros to an actual recipe
+- AI chef that generates meals from available fridge ingredients
+- Personalized portions for multiple household members
+- Meal-type awareness: breakfast, lunch, snack, dinner
+- User cravings and preferences, such as "I want porridge, not eggs"
+- Exact gram amounts for each ingredient and each person
+- Recipe instructions with cooking steps and taste notes
+- Inventory write-off after accepting a meal
 - AI-assisted virtual fridge with text and image-based food entry
 - Product recognition from package photos and nutrition labels
-- Multi-profile household system with roles, invites, and permissions
-- Personalized meal planning for several people at once
-- AI chef that generates recipes from available fridge items
-- Portion calculation by profile, kcal targets, and meal type
-- Ingredient write-off after accepting a cooking plan
-- Food log and daily nutrition summaries
-- Firebase-based authentication, household data, and persistence
-- Mobile-first PWA-oriented interface
+- Daily food log and nutrition summaries
+- Firebase-backed household profiles, roles, invites, and permissions
+- Mobile-first PWA-oriented interface for kitchen use
 
-## Core Idea
+## Why This Is Different
 
-FlowFood connects three everyday workflows that are usually separated:
+Most food tracking apps are retrospective. They answer: "What did I eat?"
 
-1. What food do we have at home?
-2. What should we cook for the people eating today?
-3. How does this meal affect inventory and daily nutrition?
+FlowFood is proactive. It answers: "What should I cook now to stay close to my goals, using what I already have?"
 
-The app keeps these pieces connected. The fridge inventory feeds the AI cooking planner; the generated plan produces portions and ingredient usage; accepted meals update both the fridge and the food log.
+The app considers:
+
+- Daily calorie target
+- Protein, fat, and carbohydrate targets
+- Calories already consumed today
+- Remaining calories for the day
+- Current meal type
+- Available products in the fridge
+- Ingredient amounts and units
+- Allergies and forbidden foods
+- Likes, dislikes, and user cravings
+- Whether the family eats the same dish with different portions or separate dishes
 
 ## Key Features
+
+### Macro-Targeted AI Meal Planning
+
+The AI cooking service generates a full meal plan using available fridge items and target nutrition data.
+
+Each generated meal includes:
+
+- Meal name and explanation
+- Full recipe with cooking steps
+- Exact ingredient grams
+- Per-person portions
+- Calories, protein, fat, and carbs for each portion
+- Total ingredient table
+- Remaining fridge inventory after cooking
+- Warnings if the meal cannot perfectly match targets or inventory constraints
+
+### Preference-Aware Cooking
+
+The user can guide the AI with natural language, for example:
+
+- "I want porridge for breakfast"
+- "Make it higher protein"
+- "Do not use eggs"
+- "Use the cottage cheese before it expires"
+- "Make it more filling"
+- "I want something warm, not a salad"
+
+The AI then adapts the recipe while still respecting calorie, macro, inventory, and allergy constraints.
 
 ### Virtual Fridge
 
@@ -58,30 +124,7 @@ The app supports shared household use instead of a single-user-only model.
 - Household creation and switching
 - Pending invite handling
 - Role-based permissions for editing, inviting, and managing members
-- Individual food profiles with kcal targets, portion multipliers, allergies, forbidden foods, likes, and dislikes
-
-### AI Meal Planning
-
-The AI cooking service generates meal plans using only available fridge items. It considers:
-
-- Selected meal type: breakfast, lunch, snack, or dinner
-- Selected participants
-- Daily kcal targets and already consumed food
-- Remaining day calories
-- Allergies and forbidden foods
-- Preferred and excluded ingredients
-- Requested dish names or user comments
-- Available inventory and exact product amounts
-
-The result includes:
-
-- Meal name and explanation
-- Per-person portions
-- Total ingredient list
-- Nutrition totals per participant
-- Recipe steps and taste notes
-- Inventory state after cooking
-- Validation warnings when targets or inventory constraints are not met
+- Individual food profiles with kcal targets, meal distribution, portion multipliers, allergies, forbidden foods, likes, and dislikes
 
 ### AI Chef Chat and Revisions
 
@@ -89,8 +132,8 @@ After a meal plan is generated, the user can chat with the AI chef to ask questi
 
 The AI can either:
 
-- Answer questions about the current menu
-- Propose a revised cooking result, such as more protein, fewer carbs, a different ingredient, or a more filling version
+- Explain why the meal was built this way
+- Propose a revised cooking result with different ingredients, higher protein, fewer carbs, more satiety, or a different taste direction
 
 The proposed revision is reviewed before being accepted.
 
@@ -130,11 +173,11 @@ When the user accepts a generated meal:
 ```text
 React / Vite App
   |
-  |-- Household profiles and permissions
-  |-- Virtual fridge
-  |-- Food log
-  |-- Cooking planner
-  |-- AI chef chat
+  |-- Household profiles and nutrition targets
+  |-- Virtual fridge inventory
+  |-- Food log and daily summaries
+  |-- Macro-aware cooking planner
+  |-- AI chef chat and revisions
         |
         v
 AI Services
@@ -147,7 +190,7 @@ AI Services
         v
 Domain Services
   |
-  |-- cookingService: target calculations
+  |-- cookingService: meal target and macro calculations
   |-- cookingHistoryService: saved meal plans
   |-- foodLogService: daily nutrition entries
   |-- fridgeService: inventory persistence
@@ -163,11 +206,11 @@ Firebase / Express
 
 ## What I Built
 
-- Designed a household food-management workflow around real family use cases
+- Designed a reverse-planning nutrition workflow: from target calories/macros to real meals
 - Implemented a virtual fridge with structured nutrition data and AI-assisted item entry
 - Built photo-based food recognition for product packages and nutrition labels
-- Created a multi-profile nutrition model with calories, macros, preferences, allergies, and portion multipliers
-- Implemented AI meal planning that respects inventory, restrictions, kcal targets, and meal type
+- Created a multi-profile nutrition model with calories, macros, meal distribution, preferences, allergies, and portion multipliers
+- Implemented AI meal planning that respects inventory, restrictions, kcal targets, macros, meal type, and user cravings
 - Added validation to check inventory usage, target deviations, and forbidden-food conflicts
 - Built an acceptance workflow that writes off ingredients and creates food log entries
 - Added AI chef chat for explaining or revising generated meal plans
@@ -176,7 +219,7 @@ Firebase / Express
 
 ## Why This Project Matters
 
-FlowFood demonstrates product thinking across AI, data modeling, and real household operations. The AI is not used as a decorative chat feature: it is connected to inventory, nutrition targets, cooking constraints, and persistent app state.
+FlowFood demonstrates product thinking around AI as a decision-making layer, not just a text generator. The AI uses structured app data to generate a practical cooking decision, and that decision becomes persistent product state: inventory changes, food log entries, nutrition totals, and saved cooking history.
 
 For recruiters, this project shows experience with:
 
@@ -187,6 +230,7 @@ For recruiters, this project shows experience with:
 - Building role-based multi-user product logic
 - Turning AI-generated plans into concrete state changes inside the app
 - Designing mobile-first interfaces for repeated daily use
+- Creating a product workflow that improves on a familiar category of apps
 
 ## Getting Started
 
